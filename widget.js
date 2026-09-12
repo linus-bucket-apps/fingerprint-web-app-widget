@@ -37,6 +37,8 @@ const elements = {
   statusTitle: document.querySelector("#status-title"),
   statusMessage: document.querySelector("#status-message"),
   statusBadge: document.querySelector("#status-badge"),
+  modelBadge: document.querySelector(".model-badge"),
+  modelAlias: document.querySelector("#model-alias"),
   retryButton: document.querySelector("#retry-button"),
   imageInput: document.querySelector("#image-input"),
   fileName: document.querySelector("#file-name"),
@@ -52,6 +54,14 @@ const elements = {
 
 let model = null;
 let previewObjectUrl = null;
+
+function setModelAlias(alias, tone = "normal") {
+  elements.modelAlias.textContent = alias || "none";
+  elements.modelBadge.dataset.tone = tone;
+  elements.modelBadge.title = alias
+    ? `Model selected by the URL: ${alias}`
+    : "No model selected in the URL";
+}
 
 function setStatus({ title, message, badge, tone = "quiet", retry = false }) {
   elements.statusTitle.textContent = title;
@@ -163,6 +173,7 @@ async function initialize() {
   const alias = new URLSearchParams(window.location.search).get("model")?.trim();
 
   if (!alias) {
+    setModelAlias(null);
     setStatus({
       title: "Your classifier is waiting for its trained model",
       message:
@@ -173,7 +184,8 @@ async function initialize() {
     return;
   }
 
-  if (!ALIAS_PATTERN.test(alias)) {
+  if (alias.length > 64 || !ALIAS_PATTERN.test(alias)) {
+    setModelAlias(alias.slice(0, 64), "error");
     setStatus({
       title: "That model name is not valid",
       message: "Use the exact lowercase model alias supplied by the teacher.",
@@ -182,6 +194,8 @@ async function initialize() {
     });
     return;
   }
+
+  setModelAlias(alias);
 
   setStatus({
     title: "Loading the classroom model…",

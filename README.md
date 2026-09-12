@@ -71,3 +71,13 @@ versioned paths when adding classroom models.
 
 The repository intentionally has no build step, package manager, backend,
 analytics, or image upload service.
+
+## Wix embed sizing
+
+The compact layout is designed for an iframe around 520–540 pixels wide. The live
+MVP was measured at approximately 533 × 538 pixels and the initial ready state fits
+without needing its own page-sized header. Results may scroll vertically after an
+image is selected.
+
+The widget header displays the active alias from the URL, for example
+`Model demo-a`. Missing and malformed model parameters are also shown explicitly.

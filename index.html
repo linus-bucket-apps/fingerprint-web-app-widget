@@ -11,76 +11,89 @@
   </head>
   <body>
     <main class="widget-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Classroom experiment</p>
-          <h1>Fingerprint Pattern Explorer</h1>
-          <p class="intro">
-            Choose a synthetic fingerprint image to see which broad ridge pattern
-            the classroom model recognizes.
-          </p>
-        </div>
-        <span id="status-badge" class="status-badge" data-tone="quiet">Waiting</span>
-      </header>
-
-      <section class="status-panel" aria-labelledby="status-title" aria-live="polite">
-        <span class="status-icon" aria-hidden="true"></span>
-        <div>
-          <h2 id="status-title">Checking the classifier…</h2>
-          <p id="status-message">Please wait while the widget reads its setup.</p>
-        </div>
-        <button id="retry-button" class="text-button" type="button" hidden>Try again</button>
-      </section>
-
-      <section class="workspace" aria-label="Image classifier">
-        <div class="upload-panel">
-          <label class="file-control" for="image-input">
-            <span class="file-control-title">Choose a test image</span>
-            <span class="file-control-help">PNG, JPEG, WebP, GIF, or BMP</span>
-          </label>
-          <input
-            id="image-input"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
-            disabled
-          >
-          <p id="file-name" class="file-name">No image selected</p>
-
-          <figure id="preview-frame" class="preview-frame" hidden>
-            <img id="image-preview" alt="Selected image preview">
-          </figure>
-        </div>
-
-        <div id="results-panel" class="results-panel" hidden>
-          <div class="results-heading">
+      <section class="widget-card">
+        <header class="app-header">
+          <div class="app-identity">
+            <span class="app-mark" aria-hidden="true"><i></i></span>
             <div>
-              <p class="eyebrow">Model result</p>
-              <h2>Strongest matches</h2>
+              <p class="eyebrow">Fingerprint Lab · Classifier widget</p>
+              <h1>Pattern Explorer</h1>
+              <p class="intro">Local image analysis · no uploads</p>
             </div>
-            <span id="prediction-time" class="prediction-time"></span>
+          </div>
+          <div class="app-meta">
+            <span class="model-badge" title="Model selected by the URL">
+              <span class="model-label">Model</span>
+              <strong id="model-alias">none</strong>
+            </span>
+            <span id="status-badge" class="status-badge" data-tone="quiet">Waiting</span>
+          </div>
+        </header>
+
+        <section class="status-panel" aria-labelledby="status-title" aria-live="polite">
+          <span class="status-icon" aria-hidden="true"></span>
+          <div>
+            <h2 id="status-title">Checking the classifier…</h2>
+            <p id="status-message">Please wait while the widget reads its setup.</p>
+          </div>
+          <button id="retry-button" class="text-button" type="button" hidden>Retry</button>
+        </section>
+
+        <section class="workspace" aria-label="Image classifier">
+          <div class="upload-panel">
+            <label class="file-control" for="image-input">
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <span>
+                <span class="file-control-title">Choose a test image</span>
+                <span class="file-control-help">PNG, JPEG, WebP, GIF, or BMP · max 15 MB</span>
+              </span>
+              <span class="browse-label" aria-hidden="true">Browse</span>
+            </label>
+            <input
+              id="image-input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+              disabled
+            >
+            <p id="file-name" class="file-name">No image selected</p>
+
+            <figure id="preview-frame" class="preview-frame" hidden>
+              <img id="image-preview" alt="Selected image preview">
+            </figure>
           </div>
 
-          <ol id="prediction-list" class="prediction-list"></ol>
+          <div id="results-panel" class="results-panel" hidden>
+            <div class="results-heading">
+              <div>
+                <p class="eyebrow">Model result</p>
+                <h2>Strongest matches</h2>
+              </div>
+              <span id="prediction-time" class="prediction-time"></span>
+            </div>
 
-          <aside id="reading-card" class="reading-card">
-            <p class="reading-label">Just for fun</p>
-            <h3 id="reading-title"></h3>
-            <p id="reading-message"></p>
-          </aside>
-        </div>
+            <ol id="prediction-list" class="prediction-list"></ol>
+
+            <aside id="reading-card" class="reading-card">
+              <p class="reading-label">Just for fun</p>
+              <h3 id="reading-title"></h3>
+              <p id="reading-message"></p>
+            </aside>
+          </div>
+        </section>
+
+        <details class="disclaimer">
+          <summary>About this educational demo and privacy</summary>
+          <p>
+            This experiment uses synthetic images. It cannot identify a person and
+            is not a forensic, security, medical, or identity tool. Personality-style
+            messages are fictional and have no scientific connection to fingerprints.
+            Your selected image is processed in this browser and is not uploaded by
+            this widget.
+          </p>
+        </details>
       </section>
-
-      <footer class="disclaimer">
-        <strong>Educational demonstration only.</strong>
-        This experiment uses synthetic images. It cannot identify a person and is
-        not a forensic, security, medical, or identity tool. Personality-style
-        messages are fictional and have no scientific connection to fingerprints.
-        Your selected image is processed in this browser and is not uploaded by
-        this widget.
-      </footer>
     </main>
 
     <noscript>This classifier needs JavaScript to run.</noscript>
   </body>
 </html>
-
