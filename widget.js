@@ -2,9 +2,6 @@
 
 const CONFIG = Object.freeze({
   catalogUrl: "./models/catalog.json",
-  topResults: 3,
-  confidenceThreshold: 0.6,
-  confidenceGap: 0.15,
   tensorflowUrl:
     "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js",
   teachableMachineUrl:
@@ -21,55 +18,66 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/bmp",
 ]);
 
-const READINGS = Object.freeze({
-  "plain arch": "A steady path suits this pattern. Try solving one small problem carefully before taking on the next.",
-  "tented arch": "This energetic pattern suggests trying an unexpected approach—purely for fun, of course.",
-  "radial loop": "A looping path can reward curiosity. Look at the problem from another angle today.",
-  "ulnar loop": "This flowing pattern invites collaboration. Compare your result with a classmate's model.",
-  "plain whorl": "A circular pattern calls for patient observation. Notice one detail you missed the first time.",
-  "central pocket loop": "A hidden center suggests a good question is waiting. Ask why the model chose this class.",
-  "double loop": "Two paths are better than one. Test a second image before drawing any conclusion.",
-  "accidental whorl": "This unusual mix celebrates surprises. Treat an unexpected prediction as evidence to investigate.",
-});
-
 const elements = {
-  statusPanel: document.querySelector(".status-panel"),
-  statusTitle: document.querySelector("#status-title"),
-  statusMessage: document.querySelector("#status-message"),
-  statusBadge: document.querySelector("#status-badge"),
-  modelBadge: document.querySelector(".model-badge"),
-  modelAlias: document.querySelector("#model-alias"),
-  retryButton: document.querySelector("#retry-button"),
+  widgetCard: document.querySelector(".widget-card"),
+  dropZone: document.querySelector("#drop-zone"),
   imageInput: document.querySelector("#image-input"),
-  fileName: document.querySelector("#file-name"),
-  previewFrame: document.querySelector("#preview-frame"),
-  imagePreview: document.querySelector("#image-preview"),
-  resultsPanel: document.querySelector("#results-panel"),
-  predictionList: document.querySelector("#prediction-list"),
-  predictionTime: document.querySelector("#prediction-time"),
-  readingCard: document.querySelector("#reading-card"),
-  readingTitle: document.querySelector("#reading-title"),
-  readingMessage: document.querySelector("#reading-message"),
+  loadingOverlay: document.querySelector("#loading-overlay"),
+  resultPanel: document.querySelector("#result-panel"),
+  resultLabel: document.querySelector("#result-label"),
+  viewResult: document.querySelector("#view-result"),
+  errorPanel: document.querySelector("#error-panel"),
+  errorMessage: document.querySelector("#error-message"),
+  retryButton: document.querySelector("#retry-button"),
 };
 
 let model = null;
-let previewObjectUrl = null;
+let modelEntry = null;
+let initializationRun = 0;
+let classificationRun = 0;
+let dragDepth = 0;
 
-function setModelAlias(alias, tone = "normal") {
-  elements.modelAlias.textContent = alias || "none";
-  elements.modelBadge.dataset.tone = tone;
-  elements.modelBadge.title = alias
-    ? `Model selected by the URL: ${alias}`
-    : "No model selected in the URL";
+function setUploadEnabled(enabled) {
+  elements.imageInput.disabled = !enabled;
+  elements.dropZone.classList.toggle("is-disabled", !enabled);
 }
 
-function setStatus({ title, message, badge, tone = "quiet", retry = false }) {
-  elements.statusTitle.textContent = title;
-  elements.statusMessage.textContent = message;
-  elements.statusBadge.textContent = badge;
-  elements.statusBadge.dataset.tone = tone;
-  elements.statusPanel.dataset.tone = tone;
+function setBusy(isBusy) {
+  elements.loadingOverlay.hidden = !isBusy;
+  elements.widgetCard.setAttribute("aria-busy", String(isBusy));
+}
+
+function showError(message, { retry = false } = {}) {
+  elements.errorMessage.textContent = message;
   elements.retryButton.hidden = !retry;
+  elements.errorPanel.hidden = false;
+}
+
+function clearError() {
+  elements.errorPanel.hidden = true;
+  elements.errorMessage.textContent = "";
+  elements.retryButton.hidden = true;
+}
+
+function showUpload() {
+  elements.dropZone.hidden = false;
+  elements.resultPanel.hidden = true;
+  elements.viewResult.removeAttribute("href");
+  elements.viewResult.hidden = true;
+}
+
+function showResult(label, resultUrl) {
+  elements.resultLabel.textContent = label;
+  elements.viewResult.hidden = !resultUrl;
+
+  if (resultUrl) {
+    elements.viewResult.href = resultUrl;
+  } else {
+    elements.viewResult.removeAttribute("href");
+  }
+
+  elements.dropZone.hidden = true;
+  elements.resultPanel.hidden = false;
 }
 
 function loadScript(src) {
@@ -140,7 +148,7 @@ function getSafeModelBase(catalog, alias) {
     throw new Error("The selected model path is not allowed.");
   }
 
-  return modelBase;
+  return { entry, modelBase };
 }
 
 async function loadModel(modelBase) {
@@ -151,90 +159,66 @@ async function loadModel(modelBase) {
     throw new Error("The Teachable Machine image library did not start correctly.");
   }
 
-  const modelUrl = new URL("model.json", modelBase).href;
-  const metadataUrl = new URL("metadata.json", modelBase).href;
-  return window.tmImage.load(modelUrl, metadataUrl);
+  return window.tmImage.load(
+    new URL("model.json", modelBase).href,
+    new URL("metadata.json", modelBase).href,
+  );
 }
 
 function describeLoadError(error) {
   if (!navigator.onLine) {
-    return "This browser appears to be offline. Reconnect, then try again.";
+    return "This browser is offline. Reconnect and retry.";
   }
 
   const detail = error instanceof Error ? error.message : "Unknown error";
-  return `The model or a required library could not be loaded. ${detail}`;
+  return `The classifier could not be loaded. ${detail}`;
 }
 
 async function initialize() {
+  const thisRun = ++initializationRun;
+  classificationRun += 1;
   model = null;
-  elements.imageInput.disabled = true;
-  elements.resultsPanel.hidden = true;
+  modelEntry = null;
+  setBusy(false);
+  setUploadEnabled(false);
+  showUpload();
+  clearError();
 
   const alias = new URLSearchParams(window.location.search).get("model")?.trim();
-
   if (!alias) {
-    setModelAlias(null);
-    setStatus({
-      title: "Your classifier is waiting for its trained model",
-      message:
-        "Add a model alias to this page's URL after the training activity to activate it.",
-      badge: "No model",
-      tone: "quiet",
-    });
+    showError("This widget needs a model link.");
     return;
   }
 
   if (alias.length > 64 || !ALIAS_PATTERN.test(alias)) {
-    setModelAlias(alias.slice(0, 64), "error");
-    setStatus({
-      title: "That model name is not valid",
-      message: "Use the exact lowercase model alias supplied by the teacher.",
-      badge: "Invalid",
-      tone: "error",
-    });
+    showError("This model link is not valid.");
     return;
   }
 
-  setModelAlias(alias);
-
-  setStatus({
-    title: "Loading the classroom model…",
-    message: `Preparing “${alias}”. The first visit may take a few seconds.`,
-    badge: "Loading",
-    tone: "busy",
-  });
-
   try {
     const catalog = await fetchCatalog();
-    const modelBase = getSafeModelBase(catalog, alias);
+    const safeModel = getSafeModelBase(catalog, alias);
 
-    if (!modelBase) {
-      setStatus({
-        title: "This model is not available",
-        message: "Check the model alias in the link or ask the teacher whether it has been published.",
-        badge: "Not found",
-        tone: "error",
-      });
+    if (!safeModel) {
+      showError("This model is not available.");
       return;
     }
 
-    model = await loadModel(modelBase);
-    elements.imageInput.disabled = false;
-    setStatus({
-      title: "The classifier is ready",
-      message: "Choose a synthetic test image below. It stays in this browser.",
-      badge: "Ready",
-      tone: "ready",
-    });
+    const loadedModel = await loadModel(safeModel.modelBase);
+    if (thisRun !== initializationRun) {
+      return;
+    }
+
+    model = loadedModel;
+    modelEntry = safeModel.entry;
+    setUploadEnabled(true);
   } catch (error) {
+    if (thisRun !== initializationRun) {
+      return;
+    }
+
     console.error("Classifier setup failed", error);
-    setStatus({
-      title: "The classifier could not be loaded",
-      message: describeLoadError(error),
-      badge: "Load error",
-      tone: "error",
-      retry: true,
-    });
+    showError(describeLoadError(error), { retry: true });
   }
 }
 
@@ -252,146 +236,153 @@ function validateImage(file) {
   }
 }
 
-function loadPreview(file) {
-  if (previewObjectUrl) {
-    URL.revokeObjectURL(previewObjectUrl);
-  }
-
-  previewObjectUrl = URL.createObjectURL(file);
-  elements.previewFrame.hidden = false;
+function loadImage(file) {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
 
   return new Promise((resolve, reject) => {
-    elements.imagePreview.addEventListener("load", resolve, { once: true });
-    elements.imagePreview.addEventListener(
+    image.addEventListener("load", () => resolve({ image, objectUrl }), { once: true });
+    image.addEventListener(
       "error",
-      () => reject(new Error("The selected image could not be decoded.")),
+      () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("The selected image could not be decoded."));
+      },
       { once: true },
     );
-    elements.imagePreview.src = previewObjectUrl;
+    image.src = objectUrl;
   });
 }
 
-function isUncertain(predictions) {
-  const first = predictions[0]?.probability ?? 0;
-  const second = predictions[1]?.probability ?? 0;
-  return first < CONFIG.confidenceThreshold || first - second < CONFIG.confidenceGap;
+function resultKey(label) {
+  return label
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("en")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-function renderPredictions(predictions, elapsedMs) {
-  const sorted = [...predictions].sort((a, b) => b.probability - a.probability);
-  const visible = sorted.slice(0, CONFIG.topResults);
-  const uncertain = isUncertain(sorted);
-
-  elements.predictionList.replaceChildren();
-
-  for (const prediction of visible) {
-    const item = document.createElement("li");
-    item.className = "prediction-row";
-
-    const label = document.createElement("span");
-    label.className = "prediction-label";
-    label.textContent = prediction.className;
-
-    const track = document.createElement("span");
-    track.className = "prediction-track";
-    track.setAttribute("aria-hidden", "true");
-
-    const fill = document.createElement("span");
-    fill.className = "prediction-fill";
-    fill.style.width = `${Math.max(0, Math.min(100, prediction.probability * 100))}%`;
-    track.append(fill);
-
-    const score = document.createElement("span");
-    score.className = "prediction-score";
-    score.textContent = `${(prediction.probability * 100).toFixed(1)}%`;
-
-    item.append(label, track, score);
-    elements.predictionList.append(item);
+function getSafeResultUrl(entry, label) {
+  const resultUrls = entry?.resultUrls;
+  if (!resultUrls || Array.isArray(resultUrls) || typeof resultUrls !== "object") {
+    return null;
   }
 
-  const winner = sorted[0];
-  const normalizedLabel = winner.className.trim().toLocaleLowerCase("en");
-  elements.predictionTime.textContent = `${Math.round(elapsedMs)} ms`;
-  elements.readingCard.dataset.uncertain = String(uncertain);
-
-  if (uncertain) {
-    elements.readingTitle.textContent = "The model is not certain";
-    elements.readingMessage.textContent =
-      "Try another crop, orientation, or image. Uncertainty is useful evidence about the model—not a failure.";
-  } else {
-    elements.readingTitle.textContent = winner.className;
-    elements.readingMessage.textContent =
-      READINGS[normalizedLabel] ??
-      `For fun, let “${winner.className}” be a reminder to stay curious and test another example.`;
+  const configuredUrl = resultUrls[label] ?? resultUrls[resultKey(label)];
+  if (typeof configuredUrl !== "string") {
+    return null;
   }
 
-  elements.resultsPanel.hidden = false;
+  try {
+    const url = new URL(configuredUrl);
+    if (url.protocol !== "https:" || url.username || url.password) {
+      return null;
+    }
+    return url.href;
+  } catch {
+    return null;
+  }
 }
 
-async function handleImageSelection(event) {
-  const file = event.target.files?.[0];
-  elements.resultsPanel.hidden = true;
+async function classify(file) {
+  const thisRun = ++classificationRun;
+  let loadedImage;
+  clearError();
+  setBusy(true);
+  setUploadEnabled(false);
+  elements.resultPanel.hidden = true;
 
   try {
     validateImage(file);
-    elements.fileName.textContent = file.name;
-    await loadPreview(file);
-
     if (!model) {
-      throw new Error("The model is not ready. Try reloading the classifier.");
+      throw new Error("The classifier is still loading. Try again in a moment.");
     }
 
-    setStatus({
-      title: "Examining the image…",
-      message: "Prediction runs locally in this browser.",
-      badge: "Predicting",
-      tone: "busy",
-    });
+    loadedImage = await loadImage(file);
+    const predictions = await model.predict(loadedImage.image, false);
 
-    const startedAt = performance.now();
-    const predictions = await model.predict(elements.imagePreview, false);
-    const elapsedMs = performance.now() - startedAt;
+    if (thisRun !== classificationRun) {
+      return;
+    }
 
     if (!Array.isArray(predictions) || predictions.length === 0) {
       throw new Error("The model returned no class predictions.");
     }
 
-    renderPredictions(predictions, elapsedMs);
-    setStatus({
-      title: "Prediction complete",
-      message: "Compare the confidence values and try another held-out image.",
-      badge: "Complete",
-      tone: "ready",
-    });
+    const winner = [...predictions].sort((a, b) => b.probability - a.probability)[0];
+    if (!winner || typeof winner.className !== "string" || !winner.className.trim()) {
+      throw new Error("The model returned an invalid class prediction.");
+    }
+
+    showResult(winner.className, getSafeResultUrl(modelEntry, winner.className));
   } catch (error) {
-    console.error("Prediction failed", error);
-    setStatus({
-      title: "This image could not be classified",
-      message: error instanceof Error ? error.message : "Choose a different image and try again.",
-      badge: "Image error",
-      tone: "error",
-    });
+    if (thisRun === classificationRun) {
+      console.error("Prediction failed", error);
+      showUpload();
+      showError(
+        error instanceof Error ? error.message : "Choose a different image and try again.",
+      );
+      setUploadEnabled(Boolean(model));
+    }
   } finally {
-    event.target.value = "";
+    if (loadedImage?.objectUrl) {
+      URL.revokeObjectURL(loadedImage.objectUrl);
+    }
+    if (thisRun === classificationRun) {
+      setBusy(false);
+    }
   }
 }
 
-elements.imageInput.addEventListener("change", handleImageSelection);
+function handleInputChange(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (file) {
+    classify(file);
+  }
+}
+
+function hasFiles(event) {
+  return Array.from(event.dataTransfer?.types ?? []).includes("Files");
+}
+
+elements.imageInput.addEventListener("change", handleInputChange);
 elements.retryButton.addEventListener("click", initialize);
+
+elements.dropZone.addEventListener("dragenter", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  if (elements.imageInput.disabled) return;
+  dragDepth += 1;
+  elements.dropZone.classList.add("is-dragging");
+});
+
+elements.dropZone.addEventListener("dragover", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = elements.imageInput.disabled ? "none" : "copy";
+});
+
+elements.dropZone.addEventListener("dragleave", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) elements.dropZone.classList.remove("is-dragging");
+});
+
+elements.dropZone.addEventListener("drop", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  elements.dropZone.classList.remove("is-dragging");
+  if (elements.imageInput.disabled) return;
+  classify(event.dataTransfer.files?.[0]);
+});
+
 window.addEventListener("offline", () => {
   if (!model) {
-    setStatus({
-      title: "This browser is offline",
-      message: "Reconnect to download the classroom model, then try again.",
-      badge: "Offline",
-      tone: "error",
-      retry: true,
-    });
-  }
-});
-window.addEventListener("beforeunload", () => {
-  if (previewObjectUrl) {
-    URL.revokeObjectURL(previewObjectUrl);
+    showError("This browser is offline. Reconnect and retry.", { retry: true });
   }
 });
 

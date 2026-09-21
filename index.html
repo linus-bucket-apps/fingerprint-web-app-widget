@@ -5,95 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="referrer" content="no-referrer">
-    <title>Fingerprint Pattern Explorer</title>
+    <title>Image classifier</title>
     <link rel="stylesheet" href="./widget.css">
     <script src="./widget.js" defer></script>
   </head>
   <body>
     <main class="widget-shell">
-      <section class="widget-card">
-        <header class="app-header">
-          <div class="app-identity">
-            <span class="app-mark" aria-hidden="true"><i></i></span>
-            <div>
-              <p class="eyebrow">Fingerprint Lab · Classifier widget</p>
-              <h1>Pattern Explorer</h1>
-              <p class="intro">Local image analysis · no uploads</p>
-            </div>
-          </div>
-          <div class="app-meta">
-            <span class="model-badge" title="Model selected by the URL">
-              <span class="model-label">Model</span>
-              <strong id="model-alias">none</strong>
-            </span>
-            <span id="status-badge" class="status-badge" data-tone="quiet">Waiting</span>
-          </div>
-        </header>
+      <section class="widget-card" aria-label="Image classifier">
+        <label id="drop-zone" class="drop-zone" for="image-input">
+          <svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="7" y="8" width="34" height="32" rx="5"></rect>
+            <path d="m13 33 8-9 6 6 4-4 4 7"></path>
+            <circle cx="18" cy="17" r="3"></circle>
+          </svg>
+          <span class="sr-only">Choose or drop an image to classify</span>
+        </label>
+        <input
+          id="image-input"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+          disabled
+        >
 
-        <section class="status-panel" aria-labelledby="status-title" aria-live="polite">
-          <span class="status-icon" aria-hidden="true"></span>
-          <div>
-            <h2 id="status-title">Checking the classifier…</h2>
-            <p id="status-message">Please wait while the widget reads its setup.</p>
-          </div>
-          <button id="retry-button" class="text-button" type="button" hidden>Retry</button>
+        <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="sr-only">Classifying image</span>
+        </div>
+
+        <section id="result-panel" class="result-panel" aria-live="polite" hidden>
+          <p id="result-label" class="result-label"></p>
+          <a id="view-result" class="result-link" target="_top" rel="noopener" hidden>View your result</a>
         </section>
 
-        <section class="workspace" aria-label="Image classifier">
-          <div class="upload-panel">
-            <label class="file-control" for="image-input">
-              <span class="upload-icon" aria-hidden="true">↑</span>
-              <span>
-                <span class="file-control-title">Choose a test image</span>
-                <span class="file-control-help">PNG, JPEG, WebP, GIF, or BMP · max 15 MB</span>
-              </span>
-              <span class="browse-label" aria-hidden="true">Browse</span>
-            </label>
-            <input
-              id="image-input"
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
-              disabled
-            >
-            <p id="file-name" class="file-name">No image selected</p>
-
-            <figure id="preview-frame" class="preview-frame" hidden>
-              <img id="image-preview" alt="Selected image preview">
-            </figure>
-          </div>
-
-          <div id="results-panel" class="results-panel" hidden>
-            <div class="results-heading">
-              <div>
-                <p class="eyebrow">Model result</p>
-                <h2>Strongest matches</h2>
-              </div>
-              <span id="prediction-time" class="prediction-time"></span>
-            </div>
-
-            <ol id="prediction-list" class="prediction-list"></ol>
-
-            <aside id="reading-card" class="reading-card">
-              <p class="reading-label">Just for fun</p>
-              <h3 id="reading-title"></h3>
-              <p id="reading-message"></p>
-            </aside>
-          </div>
-        </section>
-
-        <details class="disclaimer">
-          <summary>About this educational demo and privacy</summary>
-          <p>
-            This experiment uses synthetic images. It cannot identify a person and
-            is not a forensic, security, medical, or identity tool. Personality-style
-            messages are fictional and have no scientific connection to fingerprints.
-            Your selected image is processed in this browser and is not uploaded by
-            this widget.
-          </p>
-        </details>
+        <div id="error-panel" class="error-panel" role="alert" hidden>
+          <p id="error-message"></p>
+          <button id="retry-button" type="button" hidden>Retry</button>
+        </div>
       </section>
     </main>
 
-    <noscript>This classifier needs JavaScript to run.</noscript>
+    <noscript>This image classifier needs JavaScript to run.</noscript>
   </body>
 </html>
