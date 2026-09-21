@@ -2,6 +2,7 @@
 
 const CONFIG = Object.freeze({
   catalogUrl: "./models/catalog.json",
+  wixSiteBasePath: "/fingerprint/",
   tensorflowUrl:
     "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js",
   teachableMachineUrl:
@@ -32,7 +33,6 @@ const elements = {
 };
 
 let model = null;
-let modelEntry = null;
 let initializationRun = 0;
 let classificationRun = 0;
 let dragDepth = 0;
@@ -148,7 +148,7 @@ function getSafeModelBase(catalog, alias) {
     throw new Error("The selected model path is not allowed.");
   }
 
-  return { entry, modelBase };
+  return modelBase;
 }
 
 async function loadModel(modelBase) {
@@ -178,7 +178,6 @@ async function initialize() {
   const thisRun = ++initializationRun;
   classificationRun += 1;
   model = null;
-  modelEntry = null;
   setBusy(false);
   setUploadEnabled(false);
   showUpload();
@@ -197,20 +196,19 @@ async function initialize() {
 
   try {
     const catalog = await fetchCatalog();
-    const safeModel = getSafeModelBase(catalog, alias);
+    const modelBase = getSafeModelBase(catalog, alias);
 
-    if (!safeModel) {
+    if (!modelBase) {
       showError("This model is not available.");
       return;
     }
 
-    const loadedModel = await loadModel(safeModel.modelBase);
+    const loadedModel = await loadModel(modelBase);
     if (thisRun !== initializationRun) {
       return;
     }
 
     model = loadedModel;
-    modelEntry = safeModel.entry;
     setUploadEnabled(true);
   } catch (error) {
     if (thisRun !== initializationRun) {
@@ -263,26 +261,36 @@ function resultKey(label) {
     .replace(/^-+|-+$/g, "");
 }
 
-function getSafeResultUrl(entry, label) {
-  const resultUrls = entry?.resultUrls;
-  if (!resultUrls || Array.isArray(resultUrls) || typeof resultUrls !== "object") {
-    return null;
-  }
-
-  const configuredUrl = resultUrls[label] ?? resultUrls[resultKey(label)];
-  if (typeof configuredUrl !== "string") {
+function getWixSiteBaseUrl() {
+  if (!document.referrer) {
     return null;
   }
 
   try {
-    const url = new URL(configuredUrl);
-    if (url.protocol !== "https:" || url.username || url.password) {
+    const referrer = new URL(document.referrer);
+    if (
+      referrer.protocol !== "https:" ||
+      !referrer.hostname.endsWith(".wixsite.com") ||
+      referrer.username ||
+      referrer.password
+    ) {
       return null;
     }
-    return url.href;
+
+    return new URL(CONFIG.wixSiteBasePath, referrer.origin);
   } catch {
     return null;
   }
+}
+
+function getSafeResultUrl(label) {
+  const wixSiteBaseUrl = getWixSiteBaseUrl();
+  const slug = resultKey(label);
+  if (!wixSiteBaseUrl || !slug) {
+    return null;
+  }
+
+  return new URL(slug, wixSiteBaseUrl).href;
 }
 
 async function classify(file) {
@@ -315,7 +323,7 @@ async function classify(file) {
       throw new Error("The model returned an invalid class prediction.");
     }
 
-    showResult(winner.className, getSafeResultUrl(modelEntry, winner.className));
+    showResult(winner.className, getSafeResultUrl(winner.className));
   } catch (error) {
     if (thisRun === classificationRun) {
       console.error("Prediction failed", error);
