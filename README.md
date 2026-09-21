@@ -77,13 +77,14 @@ extension or managed browser policy removes referrer information.
 The result anchor is rendered as:
 
 ```html
-<a target="_top">View your result</a>
+<a target="_blank" rel="noopener">View your result</a>
 ```
 
-When Wix permits top-level navigation from its published embed, a visitor click
-replaces the current Wix page with the mapped result page. Test this on the
-published site, including mobile. If a browser blocks top-level navigation in the
-embed, use a Wix-compatible new-tab fallback after testing.
+Wix sandboxes an **Embed a Site** iframe without permission to navigate the
+top-level page, so a `_top` link is blocked by the browser. The `_blank` target
+works with Wix's popup permission and opens the result page in a new tab without
+requiring Velo or a parent-page message handler. Test this on the published site,
+including mobile.
 
 ## Run locally
 
