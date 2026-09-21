@@ -1,19 +1,29 @@
-# Fingerprint Pattern Explorer widget
+# Minimal image-classifier widget
 
-A small static widget for the Fingerprint Workshop MVP. It loads a teacher-approved
-Teachable Machine image model selected by the `model` URL query parameter, runs
-predictions locally in the visitor's browser, and is intended to be embedded in a
-published Wix site.
+A small static Teachable Machine image-classifier widget for embedding in a Wix
+page. The widget loads a teacher-approved local model chosen by the `model` URL
+query parameter and classifies each selected image in the visitor's browser.
+
+Its normal UI is deliberately limited to three states:
+
+- a 360 px-wide drag-and-drop image grid (the grid is also a keyboard-accessible
+  file picker);
+- an overlaid loading spinner while an uploaded image is being decoded and
+  classified; and
+- the predicted label plus a **View your result** link, when that label has a
+  configured result URL.
+
+There are no model names, confidence scores, image previews, privacy copy, or
+other page content in the widget. Put instructions, privacy information and the
+visual design in Wix around the iframe instead.
 
 This is an educational pattern-classification experiment. It is not a fingerprint
 identification or forensic system.
 
-## Current state
+## Local model files
 
-The widget shell is ready. The catalog includes the alias `demo-a`, but its model
-files have not been added yet.
-
-Expected model files:
+The catalog currently includes `demo-a`. Each model must be a Teachable Machine
+**TensorFlow.js** export stored under `models/`:
 
 ```text
 models/demo-a/v1/
@@ -22,62 +32,72 @@ models/demo-a/v1/
 └── one or more .bin weight files
 ```
 
-Extract the contents of a Teachable Machine **TensorFlow.js** export directly into
-that directory. Do not rename weight files, because `model.json` refers to their
-exported names.
+Extract the export directly into the versioned directory. Do not rename weight
+files because `model.json` references their exported filenames.
+
+## Configure the result pages
+
+Add an allowlisted HTTPS Wix page for every predicted class to that model's entry
+in `models/catalog.json`. A key can be either the exact Teachable Machine label or
+its lowercase, hyphenated result key. Exact labels take precedence.
+
+```json
+{
+  "demo-a": {
+    "path": "./models/demo-a/v1/",
+    "resultUrls": {
+      "Concentric Circles": "https://your-site.wixsite.com/fingerprint/concentric-circles",
+      "parallel-lines": "https://your-site.wixsite.com/fingerprint/parallel-lines"
+    }
+  }
+}
+```
+
+Only absolute `https:` URLs without embedded credentials are used. Invalid,
+relative or unmapped URLs are ignored, so the widget shows the plain-text model
+result without a link rather than navigating somewhere unexpected. Configure the
+URLs before publishing; the sample catalog intentionally has no destination URLs.
+
+The result anchor is rendered as:
+
+```html
+<a target="_top">View your result</a>
+```
+
+When Wix permits top-level navigation from its published embed, a visitor click
+replaces the current Wix page with the mapped result page. Test this on the
+published site, including mobile. If a browser blocks top-level navigation in the
+embed, use a Wix-compatible new-tab fallback after testing.
 
 ## Run locally
 
-Browser security prevents `fetch()` from working reliably when `index.html` is
-opened directly. Serve the repository from its root instead:
+Serve this directory rather than opening `index.html` directly:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Then test these URLs:
+Then open:
 
-- `http://localhost:8000/` — deliberate no-model state
-- `http://localhost:8000/?model=demo-a` — model loading and prediction
-- `http://localhost:8000/?model=does-not-exist` — invalid alias state
+- `http://localhost:8000/?model=demo-a` — normal model load and classification
+- `http://localhost:8000/` — missing-model error handling
+- `http://localhost:8000/?model=does-not-exist` — unavailable-model handling
 
-The first model load also downloads pinned TensorFlow.js and Teachable Machine
-browser libraries from jsDelivr. These can be self-hosted later if the school
-network test shows that the CDN is blocked.
+The first model load downloads the pinned TensorFlow.js and Teachable Machine
+libraries from jsDelivr. Self-host them only if the school-network test shows the
+CDN is unavailable.
 
-## Catalog format
+## Wix setup
 
-Only aliases listed in `models/catalog.json` are accepted:
+1. Create the category/result pages in Wix and publish them so each has an HTTPS
+   URL.
+2. Add those URLs to the relevant model's `resultUrls` map, then deploy this
+   widget and confirm the public widget URL works directly.
+3. Add the widget URL, including `?model=your-model-alias`, with Wix **Embed a
+   Site**.
+4. Start with an iframe around **360 × 170 px**. The upload and result states fit
+   within that size; allow 210–250 px high if you want room for an error message.
+5. Test drag/drop, keyboard upload, success navigation and errors on the
+   *published* Wix site in desktop and mobile browsers.
 
-```json
-{
-  "demo-a": {
-    "path": "./models/demo-a/v1/"
-  }
-}
-```
-
-Paths must stay under this site's `models/` directory. Use anonymous aliases and
-versioned paths when adding classroom models.
-
-## Before publishing
-
-1. Add and test a real two-class TensorFlow.js export.
-2. Verify all three URLs above in current Chrome and Edge.
-3. Publish the repository with GitHub Pages from the `main` branch and root folder.
-4. Test the public GitHub Pages URL directly.
-5. Embed the valid model URL in Wix using **Embed a Site**.
-6. Test image selection and prediction in the published Wix site.
-
-The repository intentionally has no build step, package manager, backend,
-analytics, or image upload service.
-
-## Wix embed sizing
-
-The compact layout is designed for an iframe around 520–540 pixels wide. The live
-MVP was measured at approximately 533 × 538 pixels and the initial ready state fits
-without needing its own page-sized header. Results may scroll vertically after an
-image is selected.
-
-The widget header displays the active alias from the URL, for example
-`Model demo-a`. Missing and malformed model parameters are also shown explicitly.
+The project has no build step, backend, analytics or image-upload service.
