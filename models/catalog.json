@@ -1,6 +1,8 @@
 {
   "demo-a": {
     "path": "./models/demo-a/v1/"
+  },
+  "demo-b": {
+    "path": "./models/demo-b/v1/"
   }
 }
-
