@@ -33,6 +33,7 @@ const elements = {
 };
 
 let model = null;
+let wixSlugs = Object.create(null);
 let initializationRun = 0;
 let classificationRun = 0;
 let dragDepth = 0;
@@ -127,7 +128,41 @@ async function fetchCatalog() {
   return catalog;
 }
 
-function getSafeModelBase(catalog, alias) {
+function getSafeWixSlugs(entry) {
+  if (
+    !entry.wixSlugs ||
+    Array.isArray(entry.wixSlugs) ||
+    typeof entry.wixSlugs !== "object"
+  ) {
+    throw new Error("The selected model does not define Wix result slugs.");
+  }
+
+  const safeSlugs = Object.create(null);
+  const usedSlugs = new Set();
+
+  for (const [label, slug] of Object.entries(entry.wixSlugs)) {
+    if (
+      !label.trim() ||
+      typeof slug !== "string" ||
+      slug.length > 64 ||
+      !ALIAS_PATTERN.test(slug) ||
+      usedSlugs.has(slug)
+    ) {
+      throw new Error("The selected model has invalid Wix result slugs.");
+    }
+
+    safeSlugs[label] = slug;
+    usedSlugs.add(slug);
+  }
+
+  if (usedSlugs.size === 0) {
+    throw new Error("The selected model does not define Wix result slugs.");
+  }
+
+  return safeSlugs;
+}
+
+function getSafeModelConfig(catalog, alias) {
   const entry = catalog[alias];
   if (!entry || typeof entry.path !== "string") {
     return null;
@@ -148,7 +183,10 @@ function getSafeModelBase(catalog, alias) {
     throw new Error("The selected model path is not allowed.");
   }
 
-  return modelBase;
+  return {
+    modelBase,
+    wixSlugs: getSafeWixSlugs(entry),
+  };
 }
 
 async function loadModel(modelBase) {
@@ -178,6 +216,7 @@ async function initialize() {
   const thisRun = ++initializationRun;
   classificationRun += 1;
   model = null;
+  wixSlugs = Object.create(null);
   setBusy(false);
   setUploadEnabled(false);
   showUpload();
@@ -196,19 +235,20 @@ async function initialize() {
 
   try {
     const catalog = await fetchCatalog();
-    const modelBase = getSafeModelBase(catalog, alias);
+    const modelConfig = getSafeModelConfig(catalog, alias);
 
-    if (!modelBase) {
+    if (!modelConfig) {
       showError("This model is not available.");
       return;
     }
 
-    const loadedModel = await loadModel(modelBase);
+    const loadedModel = await loadModel(modelConfig.modelBase);
     if (thisRun !== initializationRun) {
       return;
     }
 
     model = loadedModel;
+    wixSlugs = modelConfig.wixSlugs;
     setUploadEnabled(true);
   } catch (error) {
     if (thisRun !== initializationRun) {
@@ -252,15 +292,6 @@ function loadImage(file) {
   });
 }
 
-function resultKey(label) {
-  return label
-    .normalize("NFKD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLocaleLowerCase("en")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function getWixSiteBaseUrl() {
   if (!document.referrer) {
     return null;
@@ -285,7 +316,7 @@ function getWixSiteBaseUrl() {
 
 function getSafeResultUrl(label) {
   const wixSiteBaseUrl = getWixSiteBaseUrl();
-  const slug = resultKey(label);
+  const slug = wixSlugs[label];
   if (!wixSiteBaseUrl || !slug) {
     return null;
   }
