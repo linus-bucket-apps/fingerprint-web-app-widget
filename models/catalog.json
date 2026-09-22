@@ -1,6 +1,22 @@
 {
   "demo-a": {
-    "path": "./models/demo-a/v1/"
+    "path": "./models/demo-a/v1/",
+    "wixSlugs": {
+      "Concentric Circles": "concentric-circles",
+      "Parallel Lines": "parallel-lines"
+    }
+  },
+  "demo-b": {
+    "path": "./models/demo-b/v1/",
+    "wixSlugs": {
+      "Accidental whorl": "accidental-whorl",
+      "Central pocket loop": "central-pocket-loop",
+      "Double loop": "double-loop",
+      "Plain arch": "plain-arch",
+      "Plain whorl": "plain-whorl",
+      "Radial loop": "radial-loop",
+      "Tented arch": "tented-arch",
+      "Ulnar loop": "ulnar-loop"
+    }
   }
 }
-

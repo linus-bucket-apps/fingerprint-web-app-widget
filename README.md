@@ -22,8 +22,8 @@ identification or forensic system.
 
 ## Local model files
 
-The catalog currently includes `demo-a`. Each model must be a Teachable Machine
-**TensorFlow.js** export stored under `models/`:
+The catalog currently includes `demo-a` and `demo-b`. Each model must be a
+Teachable Machine **TensorFlow.js** export stored under `models/`:
 
 ```text
 models/demo-a/v1/
@@ -43,18 +43,25 @@ Every student must publish their Wix site with `fingerprint` as its site path:
 https://student-name.wixsite.com/fingerprint
 ```
 
-Create one page under that site for every model category. The page URL slug must
-match the category label converted to lowercase kebab case. For example:
+Create one page under that site for every model category. The widget reads each
+category's explicit Wix slug from `models/catalog.json`:
 
-| Model category | Wix result page |
-| --- | --- |
-| `Plain Arch` | `/fingerprint/plain-arch` |
-| `Concentric Circles` | `/fingerprint/concentric-circles` |
-| `Whorl` | `/fingerprint/whorl` |
+| Model | Model category | Wix slug | Wix result path |
+| --- | --- | --- | --- |
+| `demo-a` | `Concentric Circles` | `concentric-circles` | `/fingerprint/concentric-circles` |
+| `demo-a` | `Parallel Lines` | `parallel-lines` | `/fingerprint/parallel-lines` |
+| `demo-b` | `Accidental whorl` | `accidental-whorl` | `/fingerprint/accidental-whorl` |
+| `demo-b` | `Central pocket loop` | `central-pocket-loop` | `/fingerprint/central-pocket-loop` |
+| `demo-b` | `Double loop` | `double-loop` | `/fingerprint/double-loop` |
+| `demo-b` | `Plain arch` | `plain-arch` | `/fingerprint/plain-arch` |
+| `demo-b` | `Plain whorl` | `plain-whorl` | `/fingerprint/plain-whorl` |
+| `demo-b` | `Radial loop` | `radial-loop` | `/fingerprint/radial-loop` |
+| `demo-b` | `Tented arch` | `tented-arch` | `/fingerprint/tented-arch` |
+| `demo-b` | `Ulnar loop` | `ulnar-loop` | `/fingerprint/ulnar-loop` |
 
-The conversion removes accents, changes runs of spaces or punctuation to a single
-hyphen, and removes leading or trailing hyphens. Students can design these pages
-freely in Wix; no per-student domain needs to be added to the model catalog.
+Slugs must be unique within a model and use lowercase letters, numbers, and single
+hyphens. Students can design these pages freely in Wix; no per-student domain
+needs to be added to the model catalog.
 
 When embedded on a published Wix page, the widget reads `document.referrer` to
 obtain the parent site's HTTPS origin. Modern Chrome and Edge normally provide the
@@ -107,8 +114,8 @@ CDN is unavailable.
 ## Wix setup
 
 1. Set the Wix site's published site path to exactly `fingerprint`.
-2. Create and design one result page per model category, using the normalized
-   category slug described above, and publish the site.
+2. Create and design one result page per model category, using the corresponding
+   Wix slug from `models/catalog.json`, and publish the site.
 3. Deploy the widget and confirm its public URL loads successfully.
 4. Add the widget URL, including `?model=your-model-alias`, with Wix **Embed a
    Site**.
