@@ -126,6 +126,47 @@ test("rank at most three known classes while preserving original model probabili
   assert.equal(w.context.formatProbability(0), "0.0%");
 });
 
+test("catalog exports include complete weights and mappings for every model label", () => {
+  const sizes = { float32: 4, int32: 4, bool: 1, complex64: 8, uint8: 1, uint16: 2 };
+  for (const entry of Object.values(catalog)) {
+    const base = new URL(entry.path, new URL("../", import.meta.url));
+    const metadata = JSON.parse(readFileSync(new URL("metadata.json", base)));
+    const model = JSON.parse(readFileSync(new URL("model.json", base)));
+    assert.deepEqual(Object.keys(entry.wixSlugs).sort(), [...metadata.labels].sort());
+    assert.equal(new Set(Object.values(entry.wixSlugs)).size, metadata.labels.length);
+    for (const group of model.weightsManifest) {
+      const actual = group.paths.reduce((total, path) => total + readFileSync(new URL(path, base)).length, 0);
+      const expected = group.weights.reduce((total, weight) => {
+        const size = sizes[weight.quantization?.dtype ?? weight.dtype];
+        assert.ok(size, `Unsupported weight encoding: ${weight.dtype}`);
+        return total + weight.shape.reduce((count, dimension) => count * dimension, 1) * size;
+      }, 0);
+      assert.equal(actual, expected, `${base.pathname} weights do not match their manifest`);
+    }
+  }
+});
+
+test("demo-c initializes its own model and routes numbered predictions to the matching type pages", async () => {
+  const labels = Array.from({ length: 8 }, (_, index) => `type-${index + 1}`);
+  assert.deepEqual(catalog["demo-c"].wixSlugs, Object.fromEntries(labels.map((label) => [label, label])));
+  const w = widget({ query: "?model=demo-c" });
+  w.context.fetch = async () => ({ ok: true, json: async () => catalog });
+  let loadedPath;
+  w.context.testLoad = async (base) => {
+    loadedPath = base.pathname;
+    return { predict: async () => labels.map((className, index) => ({
+      className, probability: [0.76, 0.01, 0.01, 0.02, 0.14, 0.01, 0.01, 0.04][index],
+    })) };
+  };
+  w.run("loadModel = testLoad");
+  await w.context.initialize();
+  assert.equal(loadedPath, "/course/models/demo-c/v1/");
+  assert.equal(w.get("image-input").disabled, false);
+  await classifyDecoded(w);
+  assert.deepEqual(findTag(w.get("result-list"), "a").map((link) => new URL(link.href).pathname),
+    ["/fingerprint/type-1", "/fingerprint/type-5", "/fingerprint/type-8"]);
+});
+
 test("reject empty, duplicate, unknown, nonnumeric and out-of-range predictions", () => {
   const w = widget();
   for (const probability of [NaN, Infinity, -0.1, 1.1, "0.9", null]) {

@@ -19,7 +19,7 @@ Open [the scenario chooser](http://localhost:8000/preview/), or a specific state
 - [Close matches / unidentified](http://localhost:8000/?model=demo-b&preview=close)
 - [Diffuse scores / unidentified](http://localhost:8000/?model=demo-b&preview=diffuse)
 - [Two-class result](http://localhost:8000/?model=demo-a&preview=two-class)
-- [Actual classifier](http://localhost:8000/?model=demo-b)
+- [Actual client classifier](http://localhost:8000/?model=demo-c)
 
 These preview states use an illustrative SVG and explicitly labelled invented
 scores, load no model libraries, and link to a sample category destination. They
@@ -40,7 +40,7 @@ Host `index.html`, `widget.js`, `widget.css`, `models/` and `preview/` together 
 HTTPS static host. Add **Embed a Site** on the Wix upload page, pointing to:
 
 ```text
-https://teacher-name.github.io/fingerprint-web-app-widget/?model=demo-b
+https://teacher-name.github.io/fingerprint-web-app-widget/?model=demo-c
 ```
 
 Start with an embed around **860 × 460 px** for desktop. On mobile, the image stacks
@@ -52,9 +52,9 @@ Velo results-page code or conditional Wix elements are required by this approach
 Create normal Wix pages using the category slugs in `models/catalog.json`:
 
 ```text
-https://student-name.wixsite.com/fingerprint/plain-arch
-https://student-name.wixsite.com/fingerprint/tented-arch
-https://student-name.wixsite.com/fingerprint/ulnar-loop
+https://student-name.wixsite.com/fingerprint/type-1
+https://student-name.wixsite.com/fingerprint/type-2
+https://student-name.wixsite.com/fingerprint/type-8
 ```
 
 Each arrow goes directly to its row’s page. The widget takes the HTTPS
@@ -64,6 +64,11 @@ Change that teacher-managed base path for sites published under a different path
 Custom domains and Wix Studio domains are not supported by this origin check.
 Links use `target="_top"`; verify visitor-clicked navigation is allowed by the
 published iframe in the required browsers. No image or scores are sent in the URL.
+
+`demo-c` uses the client's numbered labels: `type-1` maps directly to `/type-1`,
+through `type-8` to `/type-8`. No mapping to the named fingerprint categories is
+assumed. The older `demo-b` still uses its named slugs. The sample result scenarios
+use the older demo labels and invented scores; the real-classifier link uses `demo-c`.
 
 On localhost (`localhost`, `127.0.0.1` or `::1`), real classifications also have
 working arrows to the local sample category pages when there is no Wix referrer.
@@ -94,7 +99,7 @@ alternative does not make a clear 90% leader uncertain.
 These thresholds need validation for the trained model. A high score cannot prove
 that an arbitrary image is a valid fingerprint; this rule handles uncertain scores
 and is not a guaranteed detector of non-fingerprint inputs. The supplied models
-are smoke-test/demo exports, not validated production models. This is an
+have not been validated as production models. This is an
 educational pattern experiment, not fingerprint identification or a forensic tool.
 
 ## Models and checks
@@ -103,7 +108,9 @@ Each model export contains `model.json`, `metadata.json` and its referenced `.bi
 weights in a versioned folder under `models/`. Do not rename weight files. The
 `model` query parameter selects an alias in `models/catalog.json`; every label
 must map to a unique lowercase category slug. `demo-a` has two classes and
-`demo-b` has eight. Missing, malformed or unknown aliases show a setup error.
+`demo-b` has eight named classes. `demo-c` is the unmodified client export from
+`client-set-224/tm-my-image-model.zip`, with eight numbered classes (`type-1`
+through `type-8`). Missing, malformed or unknown aliases show a setup error.
 
 TensorFlow.js and Teachable Machine load from pinned CDN URLs in `widget.js`.
 There is no prediction backend, analytics service or image-upload endpoint.
