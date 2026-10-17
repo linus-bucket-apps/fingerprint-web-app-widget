@@ -1,131 +1,155 @@
-# Fingerprint explorer widget
+# Minimal image-classifier widget
 
-A self-contained Teachable Machine classifier for a Wix embed. Visitors choose an
-image, then see their fingerprint on the left and up to three horizontal probability
-bars on the right. Each row has an arrow to that fingerprint type’s Wix page.
-The model runs in the browser; the selected image stays in the browser.
+## Two separate widget versions
 
-## Preview for client review
+The repository root serves the original compact upload / single-result widget.
+The new image-preview and top-three chart stays under `trials/top-three/`.
 
-Serve this directory (no build or package installation):
+| Version | Wix embed URL |
+| --- | --- |
+| Original, single result | `https://linus-bucket-apps.github.io/fingerprint-web-app-widget/?model=demo-c` |
+| Isolated top-three trial | `https://linus-bucket-apps.github.io/fingerprint-web-app-widget/trials/top-three/?model=demo-c` |
+
+Both paths support `demo-a`, `demo-b` and `demo-c`. The client export `demo-c`
+uses `type-1` through `type-8`, with identical category page slugs. This restoration
+keeps all model files and the trial directory unchanged. The root HTML, CSS and
+JavaScript are restored exactly from `031d8f7`, the version before the top-three
+feature PR #5. The root widget retains its original single-winner behavior;
+confidence gating and the restart/image/chart interface belong to the trial.
+
+For trial setup and tests, see [trials/top-three/README.md](trials/top-three/README.md).
+Future trial changes should stay inside that directory. A root UI change updates
+existing embeds that use the root URL.
+
+Run checks for both versions:
+
+```sh
+node --test tests/widget.test.mjs trials/top-three/tests/widget.test.mjs
+```
+
+A small static Teachable Machine image-classifier widget for embedding in a Wix
+page. The widget loads a teacher-approved local model chosen by the `model` URL
+query parameter and classifies each selected image in the visitor's browser.
+
+Its normal UI is deliberately limited to three states:
+
+- a 360 px-wide drag-and-drop image grid (the grid is also a keyboard-accessible
+  file picker);
+- an overlaid loading spinner while an uploaded image is being decoded and
+  classified; and
+- the predicted label plus a **View your result** link when the widget can identify
+  the published Wix site that contains it.
+
+There are no model names, confidence scores, image previews, privacy copy, or
+other page content in the widget. Put instructions, privacy information and the
+visual design in Wix around the iframe instead.
+
+This is an educational pattern-classification experiment. It is not a fingerprint
+identification or forensic system.
+
+## Local model files
+
+The catalog currently includes `demo-a`, `demo-b` and `demo-c`. Each model must be a
+Teachable Machine **TensorFlow.js** export stored under `models/`:
+
+```text
+models/demo-a/v1/
+├── model.json
+├── metadata.json
+└── one or more .bin weight files
+```
+
+Extract the export directly into the versioned directory. Do not rename weight
+files because `model.json` references their exported filenames.
+
+## Configure the Wix result pages
+
+Every student must publish their Wix site with `fingerprint` as its site path:
+
+```text
+https://student-name.wixsite.com/fingerprint
+```
+
+Create one page under that site for every model category. The widget reads each
+category's explicit Wix slug from `models/catalog.json`:
+
+| Model | Model category | Wix slug | Wix result path |
+| --- | --- | --- | --- |
+| `demo-a` | `Concentric Circles` | `concentric-circles` | `/fingerprint/concentric-circles` |
+| `demo-a` | `Parallel Lines` | `parallel-lines` | `/fingerprint/parallel-lines` |
+| `demo-b` | `Accidental whorl` | `accidental-whorl` | `/fingerprint/accidental-whorl` |
+| `demo-b` | `Central pocket loop` | `central-pocket-loop` | `/fingerprint/central-pocket-loop` |
+| `demo-b` | `Double loop` | `double-loop` | `/fingerprint/double-loop` |
+| `demo-b` | `Plain arch` | `plain-arch` | `/fingerprint/plain-arch` |
+| `demo-b` | `Plain whorl` | `plain-whorl` | `/fingerprint/plain-whorl` |
+| `demo-b` | `Radial loop` | `radial-loop` | `/fingerprint/radial-loop` |
+| `demo-b` | `Tented arch` | `tented-arch` | `/fingerprint/tented-arch` |
+| `demo-b` | `Ulnar loop` | `ulnar-loop` | `/fingerprint/ulnar-loop` |
+
+Slugs must be unique within a model and use lowercase letters, numbers, and single
+hyphens. Students can design these pages freely in Wix; no per-student domain
+needs to be added to the model catalog.
+
+When embedded on a published Wix page, the widget reads `document.referrer` to
+obtain the parent site's HTTPS origin. Modern Chrome and Edge normally provide the
+origin for a cross-origin iframe, but omit the parent's path. The widget therefore
+combines that origin with the fixed `/fingerprint/` path and the category slug:
+
+```text
+document.referrer: https://student-name.wixsite.com/
+fixed site path:   /fingerprint/
+category slug:     plain-arch
+result URL:        https://student-name.wixsite.com/fingerprint/plain-arch
+```
+
+For safety, result links are created only when the referrer uses HTTPS and its
+hostname ends in `.wixsite.com`. If the referrer is missing or rejected, the
+widget still shows the plain-text model result but hides the link. This fallback
+can occur when the widget is opened directly, in Wix Preview, or when a privacy
+extension or managed browser policy removes referrer information.
+
+The result anchor is rendered as:
+
+```html
+<a target="_blank" rel="noopener">View your result</a>
+```
+
+Wix sandboxes an **Embed a Site** iframe without permission to navigate the
+top-level page, so a `_top` link is blocked by the browser. The `_blank` target
+works with Wix's popup permission and opens the result page in a new tab without
+requiring Velo or a parent-page message handler. Test this on the published site,
+including mobile.
+
+## Run locally
+
+Serve this directory rather than opening `index.html` directly:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Open [the scenario chooser](http://localhost:8000/preview/), or a specific state:
+Then open:
 
-- [Clear match](http://localhost:8000/?model=demo-b&preview=clear)
-- [Close matches / unidentified](http://localhost:8000/?model=demo-b&preview=close)
-- [Diffuse scores / unidentified](http://localhost:8000/?model=demo-b&preview=diffuse)
-- [Two-class result](http://localhost:8000/?model=demo-a&preview=two-class)
-- [Actual client classifier](http://localhost:8000/?model=demo-c)
+- `http://localhost:8000/?model=demo-a` — normal model load and classification
+- `http://localhost:8000/` — missing-model error handling
+- `http://localhost:8000/?model=does-not-exist` — unavailable-model handling
 
-These preview states use an illustrative SVG and explicitly labelled invented
-scores, load no model libraries, and link to a sample category destination. They
-are for reviewing the layout, not evaluating model accuracy. **Try another image**
-exits the sample state and initializes the real classifier. Remove `preview` from
-any production embed URL.
+The first model load downloads the pinned TensorFlow.js and Teachable Machine
+libraries from jsDelivr. Self-host them only if the school-network test shows the
+CDN is unavailable.
 
-The design keeps the upload, inference, result chart, uncertainty handling and
-retry flow inside the widget. The teacher controls that interface in HTML/CSS/JS.
-Students still write and visually design the individual category pages in Wix.
-If students need visual control over the chart itself, use the separate Wix-native
-results approach instead. This branch is a reviewable alternative before deciding
-whether to switch Wix editors or add conditional rendering there.
+## Wix setup
 
-## Embed in Wix
+1. Set the Wix site's published site path to exactly `fingerprint`.
+2. Create and design one result page per model category, using the corresponding
+   Wix slug from `models/catalog.json`, and publish the site.
+3. Deploy the widget and confirm its public URL loads successfully.
+4. Add the widget URL, including `?model=your-model-alias`, with Wix **Embed a
+   Site**.
+5. Start with an iframe around **360 × 170 px**. The upload and result states fit
+   within that size; allow 210–250 px high if you want room for an error message.
+6. Test drag/drop, keyboard upload, success navigation and errors on the
+   *published* Wix site in Chrome and Edge, including mobile where relevant. Wix
+   Preview may not expose the student's published domain as the referrer.
 
-Host `index.html`, `widget.js`, `widget.css`, `models/` and `preview/` together on an
-HTTPS static host. Add **Embed a Site** on the Wix upload page, pointing to:
-
-```text
-https://teacher-name.github.io/fingerprint-web-app-widget/?model=demo-c
-```
-
-Start with an embed around **860 × 460 px** for desktop. On mobile, the image stacks
-above the chart; allow roughly **700 px** height, more for
-long labels. Verify the actual iframe on published desktop and mobile pages:
-widget CSS cannot resize the containing Wix embed. No CMS, message handshake,
-Velo results-page code or conditional Wix elements are required by this approach.
-
-Create normal Wix pages using the category slugs in `models/catalog.json`:
-
-```text
-https://student-name.wixsite.com/fingerprint/type-1
-https://student-name.wixsite.com/fingerprint/type-2
-https://student-name.wixsite.com/fingerprint/type-8
-```
-
-Each arrow goes directly to its row’s page. The widget takes the HTTPS
-`.wixsite.com` origin from `document.referrer`, combines it with
-`CONFIG.wixSiteBasePath` (`/fingerprint/`), and appends the catalog’s validated slug.
-Change that teacher-managed base path for sites published under a different path.
-Custom domains and Wix Studio domains are not supported by this origin check.
-Links use `target="_top"`; verify visitor-clicked navigation is allowed by the
-published iframe in the required browsers. No image or scores are sent in the URL.
-
-`demo-c` uses the client's numbered labels: `type-1` maps directly to `/type-1`,
-through `type-8` to `/type-8`. No mapping to the named fingerprint categories is
-assumed. The older `demo-b` still uses its named slugs. The sample result scenarios
-use the older demo labels and invented scores; the real-classifier link uses `demo-c`.
-
-On localhost (`localhost`, `127.0.0.1` or `::1`), real classifications also have
-working arrows to the local sample category pages when there is no Wix referrer.
-This keeps the design review usable after an actual image upload; it does not
-substitute sample predictions for model inference. The arrow tooltip and accessible
-label identify sample destinations.
-
-On other hosts with a missing or untrusted referrer (including some Wix Preview/
-privacy settings), the image and chart still work. Arrows are visibly disabled;
-their tooltips explain that the published Wix site is needed. Test real navigation
-from the published site, not only the sample destinations.
-
-## Predictions and unidentified cases
-
-One model inference supplies all class scores. The widget validates them, sorts
-them and keeps up to three predictions. Two-class models display only two bars.
-The bar widths use the original probabilities on a 0–100% scale; the selected
-scores are never rescaled to total 100%. Labels show one decimal place, with
-positive scores below 0.1% displayed as `<0.1%`.
-
-The initial experimental confidence rule marks the image **Unidentified** if the
-leading score is below **50%**, or the lead over second place is below **15
-percentage points**. Those constants are in `CONFIG` in `widget.js`. Unidentified
-results hide all prediction bars, scores and category arrows. The selected image
-and restart button remain visible beside a short retry message. A low-scoring
-alternative does not make a clear 90% leader uncertain.
-
-These thresholds need validation for the trained model. A high score cannot prove
-that an arbitrary image is a valid fingerprint; this rule handles uncertain scores
-and is not a guaranteed detector of non-fingerprint inputs. The supplied models
-have not been validated as production models. This is an
-educational pattern experiment, not fingerprint identification or a forensic tool.
-
-## Models and checks
-
-Each model export contains `model.json`, `metadata.json` and its referenced `.bin`
-weights in a versioned folder under `models/`. Do not rename weight files. The
-`model` query parameter selects an alias in `models/catalog.json`; every label
-must map to a unique lowercase category slug. `demo-a` has two classes and
-`demo-b` has eight named classes. `demo-c` is the unmodified client export from
-`client-set-224/tm-my-image-model.zip`, with eight numbered classes (`type-1`
-through `type-8`). Missing, malformed or unknown aliases show a setup error.
-
-TensorFlow.js and Teachable Machine load from pinned CDN URLs in `widget.js`.
-There is no prediction backend, analytics service or image-upload endpoint.
-Selected image object URLs are released on reset/error; the image is retained
-while its results are displayed. Supported images: PNG, JPEG, WebP, GIF and BMP,
-up to 15 MB. Invalid or undecodable files return to upload with an error.
-
-Run the widget checks:
-
-```sh
-node --test tests/widget.test.mjs
-```
-
-Before a student rollout, test real image upload, reset and repeated upload,
-model-load retry/offline states, both model sizes, uncertainty messages,
-keyboard operation, long labels and mobile iframe sizing. A published Wix test is
-still needed to confirm the referrer and top-level category navigation. Creating
-a PR does not publish or merge this prototype.
+The project has no build step, backend, analytics or image-upload service.
