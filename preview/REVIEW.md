@@ -33,7 +33,16 @@ The screenshot images below were captured from the local browser. No Wix site
 was changed or published. Published Wix referrer/navigation and final iframe
 height still require verification in the intended site and browsers.
 
+The widget uses a minimal layout: upload button and formats, then the image,
+labelled probability bars, category arrows and an icon-only reset at the top right.
+Unidentified results show a compact status above the chart. Headings and navigation
+hints remain available to screen readers without adding visible copy.
+
 ## Screenshots
+
+Upload:
+
+![Upload](screenshots/upload.jpg)
 
 Clear sample:
 
@@ -46,7 +55,3 @@ Unidentified sample:
 Mobile unidentified sample:
 
 ![Mobile sample](screenshots/mobile-unidentified.jpg)
-
-Actual model inference with the synthetic placeholder:
-
-![Actual inference](screenshots/actual-inference.jpg)

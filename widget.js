@@ -147,7 +147,7 @@ function showResults(predictions) {
   elements.resultPanel.setAttribute("data-state", unidentified ? "unidentified" : "identified");
   elements.uncertaintyMessage.hidden = !unidentified;
   elements.uncertaintyMessage.textContent = unidentified
-    ? "The model could not identify a clear match. These are tentative matches. Try a clearer, closer crop, or explore the patterns to compare their features."
+    ? "Unidentified · tentative matches"
     : "";
   elements.dropZone.hidden = true;
   elements.resultPanel.hidden = false;
@@ -374,7 +374,7 @@ async function initialize() {
         "Accidental whorl", "Central pocket loop", "Double loop", "Radial loop"];
     wixSlugs = Object.fromEntries(labels.map((label) => [label,
       label.toLowerCase().replaceAll(" ", "-")]));
-    elements.demoBanner.textContent = "Design preview · Sample image and illustrative scores. No model has analyzed this image.";
+    elements.demoBanner.textContent = "Sample preview";
     elements.previewImage.src = "./preview/fingerprint.svg";
     elements.previewImage.alt = "Illustrative fingerprint used for this design preview";
     setBusy(false);

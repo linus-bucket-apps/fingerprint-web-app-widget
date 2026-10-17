@@ -43,8 +43,8 @@ HTTPS static host. Add **Embed a Site** on the Wix upload page, pointing to:
 https://teacher-name.github.io/fingerprint-web-app-widget/?model=demo-b
 ```
 
-Start with an embed around **860 × 760 px** for desktop. On mobile, the image stacks
-above the chart; allow roughly **1,100 px** height, more for uncertainty messages or
+Start with an embed around **860 × 460 px** for desktop. On mobile, the image stacks
+above the chart; allow roughly **700 px** height, more for
 long labels. Verify the actual iframe on published desktop and mobile pages:
 widget CSS cannot resize the containing Wix embed. No CMS, message handshake,
 Velo results-page code or conditional Wix elements are required by this approach.
@@ -67,7 +67,7 @@ published iframe in the required browsers. No image or scores are sent in the UR
 
 With a missing or untrusted referrer (including local standalone use and some Wix
 Preview/privacy settings), the image and chart still work. Navigation controls are
-unavailable and a message explains that the published Wix site is needed. Test
+unavailable and a screen-reader message explains that the published Wix site is needed. Test
 real navigation from the published site, not only the sample destinations.
 
 ## Predictions and unidentified cases
@@ -81,7 +81,7 @@ positive scores below 0.1% displayed as `<0.1%`.
 The initial experimental confidence rule marks the image **Unidentified** if the
 leading score is below **50%**, or the lead over second place is below **15
 percentage points**. Those constants are in `CONFIG` in `widget.js`. The image and
-top matches remain visible as tentative results, with advice to try a clearer crop.
+top matches remain visible with a compact **Unidentified · tentative matches** status.
 Category arrows remain available for comparison. A low-scoring alternative does
 not make a clear 90% leader uncertain.
 
