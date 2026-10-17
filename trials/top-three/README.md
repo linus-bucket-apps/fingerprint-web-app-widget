@@ -32,8 +32,11 @@ directory remains in the published tree.
 2. On the test page, choose **Embed a Site**, then **Enter Website Address**, and
    paste the actual-inference trial URL above. Use `?model=demo-c` without a
    `preview` parameter for real image tests. Apply the change.
-3. Start with roughly **860 × 460 px** for desktop and about **700 px** height for
-   the mobile embed; resize to avoid clipping at the actual site width.
+3. Use the original widget’s **360 × 170 px** embed size for upload and normal
+   results. The trial stays side by side at narrow widths; the image and reset
+   share the left column, and three 44 px arrow targets fit on the right. Long
+   labels truncate visually, with the full label on hover and for screen readers.
+   Setup/error messages can require more height, as with the original widget.
 4. Use normal Wix category pages whose slugs match `models/catalog.json`:
    `type-1`, `type-2`, `type-3`, `type-4`, `type-5`, `type-6`, `type-7`, `type-8`.
    Each model label maps to the identical slug; no named-category mapping is assumed.

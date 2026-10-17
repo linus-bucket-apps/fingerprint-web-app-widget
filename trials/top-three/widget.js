@@ -169,6 +169,7 @@ function showResults(predictions) {
     const name = document.createElement("span");
     name.className = "prediction-name";
     name.textContent = prediction.className;
+    name.title = prediction.className;
     const probability = document.createElement("span");
     probability.className = "prediction-probability";
     probability.textContent = formatProbability(prediction.probability);
