@@ -6,6 +6,10 @@ diffuse and two-class sample outputs. Each sample explicitly labels its invented
 scores. The arrows open a sample destination; actual Wix navigation needs the
 published site and its configured category pages.
 
+Real uploads on localhost also link to these sample category destinations. This
+lets reviewers test the arrows with actual model output without a Wix referrer.
+On a published Wix embed, arrows link to the student's category pages instead.
+
 ## What to decide
 
 - Does the image-left, probabilities-right layout communicate the result clearly?
@@ -55,3 +59,7 @@ Unidentified sample:
 Mobile unidentified sample:
 
 ![Mobile sample](screenshots/mobile-unidentified.jpg)
+
+Real localhost inference with working sample arrows (generated test image):
+
+![Local inference](screenshots/local-inference.jpg)

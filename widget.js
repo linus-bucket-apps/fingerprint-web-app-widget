@@ -142,6 +142,7 @@ function showUpload() {
 
 function showResults(predictions) {
   const unidentified = isUnidentified(predictions);
+  const sampleDestinations = usesSampleDestinations();
   elements.resultLabel.textContent = unidentified ? "Unidentified fingerprint" : "Top matches";
   elements.chartTitle.textContent = `Top ${predictions.length} ${unidentified ? "tentative matches" : "predictions"}`;
   elements.resultPanel.setAttribute("data-state", unidentified ? "unidentified" : "identified");
@@ -185,23 +186,26 @@ function showResults(predictions) {
     const destination = getSafeCategoryUrl(prediction.slug);
     const link = document.createElement(destination ? "a" : "span");
     link.className = destination ? "prediction-link" : "prediction-link is-unavailable";
+    link.textContent = "→";
     if (destination) {
       hasNavigation = true;
       link.href = destination;
-      link.target = previewScenario ? "_self" : "_top";
-      link.textContent = "→";
-      link.setAttribute("aria-label", previewScenario
+      link.target = sampleDestinations ? "_self" : "_top";
+      link.setAttribute("aria-label", sampleDestinations
         ? `Sample destination: ${prediction.className}` : `Learn about ${prediction.className}`);
+      link.title = sampleDestinations ? `Preview the ${prediction.className} sample page` : `Learn about ${prediction.className}`;
     } else {
-      link.textContent = "—";
-      link.setAttribute("aria-hidden", "true");
+      link.setAttribute("role", "link");
+      link.setAttribute("aria-disabled", "true");
+      link.setAttribute("aria-label", `${prediction.className}: navigation requires the published Wix site`);
+      link.title = "Open this widget from your published Wix site to enable navigation";
     }
     item.append(info, link);
     elements.resultList.append(item);
   }
   elements.resultList.hidden = false;
-  elements.resultHint.hidden = hasNavigation && !previewScenario;
-  elements.resultHint.textContent = previewScenario
+  elements.resultHint.hidden = hasNavigation && !sampleDestinations;
+  elements.resultHint.textContent = sampleDestinations
     ? "Sample destinations: each arrow opens a local preview of a fingerprint type page."
     : "Type-page links appear when this widget is embedded on the configured Wix site.";
   elements.anotherImage.hidden = false;
@@ -495,7 +499,7 @@ function getSafeCategoryUrl(slug) {
       !Object.values(wixSlugs).includes(slug)) {
     return null;
   }
-  if (previewScenario) {
+  if (usesSampleDestinations()) {
     const url = new URL("./preview/category.html", window.location.href);
     url.searchParams.set("type", slug);
     return url.href;
@@ -505,6 +509,14 @@ function getSafeCategoryUrl(slug) {
     return null;
   }
   return new URL(slug, wixSiteBaseUrl).href;
+}
+
+function usesSampleDestinations() {
+  if (previewScenario) return true;
+  const location = window.location;
+  return ["http:", "https:"].includes(location.protocol) &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) &&
+    !getWixSiteBaseUrl();
 }
 
 async function classify(file) {

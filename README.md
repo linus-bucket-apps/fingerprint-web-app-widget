@@ -65,10 +65,16 @@ Custom domains and Wix Studio domains are not supported by this origin check.
 Links use `target="_top"`; verify visitor-clicked navigation is allowed by the
 published iframe in the required browsers. No image or scores are sent in the URL.
 
-With a missing or untrusted referrer (including local standalone use and some Wix
-Preview/privacy settings), the image and chart still work. Navigation controls are
-unavailable and a screen-reader message explains that the published Wix site is needed. Test
-real navigation from the published site, not only the sample destinations.
+On localhost (`localhost`, `127.0.0.1` or `::1`), real classifications also have
+working arrows to the local sample category pages when there is no Wix referrer.
+This keeps the design review usable after an actual image upload; it does not
+substitute sample predictions for model inference. The arrow tooltip and accessible
+label identify sample destinations.
+
+On other hosts with a missing or untrusted referrer (including some Wix Preview/
+privacy settings), the image and chart still work. Arrows are visibly disabled;
+their tooltips explain that the published Wix site is needed. Test real navigation
+from the published site, not only the sample destinations.
 
 ## Predictions and unidentified cases
 

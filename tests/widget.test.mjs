@@ -58,7 +58,7 @@ class Element {
   focus() { this.focused = true; }
 }
 
-function widget({ referrer = "https://student.wixsite.com/fingerprint/upload", query = "?model=demo-b" } = {}) {
+function widget({ referrer = "https://student.wixsite.com/fingerprint/upload", query = "?model=demo-b", baseUrl = "https://widget.example/course/" } = {}) {
   const elements = new Map();
   const images = [];
   const created = [];
@@ -82,7 +82,7 @@ function widget({ referrer = "https://student.wixsite.com/fingerprint/upload", q
   };
   const context = vm.createContext({
     URL: BrowserURL, URLSearchParams, Image: BrowserImage, document,
-    window: { location: new URL(`https://widget.example/course/${query}`), addEventListener() {} },
+    window: { location: new URL(`${baseUrl}${query}`), addEventListener() {} },
     navigator: { onLine: true }, console: { error() {} },
     fetch: async () => { throw new Error("Unexpected network request"); },
   });
@@ -289,7 +289,33 @@ test("untrusted referrers preserve scores while rendering no active category lin
     assert.equal(findTag(w.get("result-list"), "a").length, 0, referrer);
     assert.equal(w.get("result-list").children.length, 3);
     assert.equal(w.get("result-hint").hidden, false);
+    const control = w.get("result-list").children[0].children[1];
+    assert.equal(control.textContent, "→");
+    assert.equal(control.getAttribute("aria-disabled"), "true");
+    assert.match(control.title, /published Wix site/);
   }
+});
+
+test("real classifications on loopback hosts have working sample arrows without a Wix referrer", () => {
+  for (const host of ["localhost", "127.0.0.1", "[::1]"]) {
+    const w = widget({ referrer: "", baseUrl: `http://${host}:8000/course/` });
+    w.context.showResults(w.context.getRankedPredictions(raw));
+    const links = findTag(w.get("result-list"), "a");
+    assert.equal(links.length, 3);
+    for (const link of links) {
+      assert.equal(link.textContent, "→");
+      assert.equal(new URL(link.href).pathname, "/course/preview/category.html");
+      assert.equal(new URL(link.href).hostname, host);
+      assert.equal(link.target, "_self");
+      assert.match(link.getAttribute("aria-label"), /Sample destination/);
+    }
+  }
+  for (const baseUrl of ["https://localhost.evil.example/", "https://127.0.0.1.evil.example/", "https://widget.example/"]) {
+    const w = widget({ referrer: "", baseUrl });
+    assert.equal(w.context.getSafeCategoryUrl("plain-arch"), null);
+  }
+  const embedded = widget({ baseUrl: "http://localhost:8000/" });
+  assert.equal(embedded.context.getSafeCategoryUrl("plain-arch"), "https://student.wixsite.com/fingerprint/plain-arch");
 });
 
 test("category navigation validates slugs before constructing a destination", () => {
