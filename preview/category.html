@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample category page</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 56px 24px; color: #253e35; background: #f5f4ef; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 620px; margin: auto; border: 1px solid #d3d9cf; border-radius: 18px; background: white; padding: clamp(24px, 6vw, 48px); }
+    .eyebrow { font-size: 12px; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { font-size: 36px; line-height: 1.2; letter-spacing: -.035em; }
+    a { display: inline-flex; align-items: center; min-height: 44px; color: #254e40; }
+    a:focus-visible { outline: 3px solid #457a64; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Design preview · Sample destination</p>
+    <h1 id="category-title">Fingerprint category</h1>
+    <p>In the published Wix site, this arrow opens the student’s page for this fingerprint type. Students can write the explanation and choose the images, colours and layout of that page.</p>
+    <p>This placeholder only demonstrates navigation. It contains no classification result or personality assessment.</p>
+    <a href="./">← Back to the design scenarios</a>
+  </main>
+  <script>
+    const titles = {
+      "plain-arch": "Plain arch", "tented-arch": "Tented arch", "ulnar-loop": "Ulnar loop",
+      "radial-loop": "Radial loop", "plain-whorl": "Plain whorl", "accidental-whorl": "Accidental whorl",
+      "central-pocket-loop": "Central pocket loop", "double-loop": "Double loop",
+      "parallel-lines": "Parallel Lines", "concentric-circles": "Concentric Circles"
+    };
+    document.querySelector("#category-title").textContent = titles[new URLSearchParams(location.search).get("type")] || "Fingerprint category";
+  </script>
+</body>
+</html>

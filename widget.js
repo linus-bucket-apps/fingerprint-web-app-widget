@@ -3,6 +3,8 @@
 const CONFIG = Object.freeze({
   catalogUrl: "./models/catalog.json",
   wixSiteBasePath: "/fingerprint/",
+  unidentifiedMinProbability: 0.5,
+  unidentifiedMinLead: 0.15,
   tensorflowUrl:
     "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js",
   teachableMachineUrl:
@@ -26,7 +28,14 @@ const elements = {
   loadingOverlay: document.querySelector("#loading-overlay"),
   resultPanel: document.querySelector("#result-panel"),
   resultLabel: document.querySelector("#result-label"),
-  viewResult: document.querySelector("#view-result"),
+  chartTitle: document.querySelector("#chart-title"),
+  previewImage: document.querySelector("#preview-image"),
+  uncertaintyMessage: document.querySelector("#uncertainty-message"),
+  loadingMessage: document.querySelector("#loading-message"),
+  demoBanner: document.querySelector("#demo-banner"),
+  resultList: document.querySelector("#result-list"),
+  resultHint: document.querySelector("#result-hint"),
+  anotherImage: document.querySelector("#another-image"),
   errorPanel: document.querySelector("#error-panel"),
   errorMessage: document.querySelector("#error-message"),
   retryButton: document.querySelector("#retry-button"),
@@ -37,15 +46,75 @@ let wixSlugs = Object.create(null);
 let initializationRun = 0;
 let classificationRun = 0;
 let dragDepth = 0;
+let activeModelAlias = null;
+let previewScenario = null;
+let selectedObjectUrl = null;
+const ownedObjectUrls = new Set();
+
+const PREVIEW_SCENARIOS = Object.freeze({
+  clear: [0.76, 0.14, 0.06, 0.04, 0, 0, 0, 0],
+  close: [0.48, 0.46, 0.03, 0.03, 0, 0, 0, 0],
+  diffuse: [0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
+  "two-class": [0.68, 0.32],
+});
+
+function getPreviewScenario() {
+  const value = new URLSearchParams(window.location.search).get("preview");
+  return Object.hasOwn(PREVIEW_SCENARIOS, value) ? value : null;
+}
+
+function getRankedPredictions(predictions) {
+  if (!Array.isArray(predictions) || predictions.length === 0) {
+    throw new Error("The model returned no class predictions.");
+  }
+  const seen = new Set();
+  const ranked = predictions.map((prediction) => {
+    if (!prediction || typeof prediction.className !== "string" ||
+        !Object.hasOwn(wixSlugs, prediction.className) || seen.has(prediction.className) ||
+        !Number.isFinite(prediction.probability) || prediction.probability < 0 ||
+        prediction.probability > 1) {
+      throw new Error("The model returned an invalid class prediction.");
+    }
+    seen.add(prediction.className);
+    return { className: prediction.className, slug: wixSlugs[prediction.className],
+      probability: prediction.probability };
+  });
+  return ranked.sort((a, b) => b.probability - a.probability).slice(0, 3);
+}
+
+function formatProbability(probability) {
+  return probability > 0 && probability < 0.001 ? "<0.1%" : `${(probability * 100).toFixed(1)}%`;
+}
+
+function isUnidentified(predictions) {
+  const first = predictions[0]?.probability ?? 0;
+  const second = predictions[1]?.probability ?? 0;
+  // Decimal probabilities can put an exact 0.15 lead slightly below its boundary.
+  const tolerance = Number.EPSILON * 4;
+  return first + tolerance < CONFIG.unidentifiedMinProbability ||
+    first - second + tolerance < CONFIG.unidentifiedMinLead;
+}
 
 function setUploadEnabled(enabled) {
   elements.imageInput.disabled = !enabled;
   elements.dropZone.classList.toggle("is-disabled", !enabled);
 }
 
-function setBusy(isBusy) {
+function setBusy(isBusy, message = "Analyzing your fingerprint…") {
   elements.loadingOverlay.hidden = !isBusy;
+  elements.loadingMessage.textContent = isBusy ? message : "";
   elements.widgetCard.setAttribute("aria-busy", String(isBusy));
+}
+
+function releaseSelectedImage() {
+  elements.previewImage.removeAttribute("src");
+  revokeImageUrl(selectedObjectUrl);
+  selectedObjectUrl = null;
+}
+
+function revokeImageUrl(objectUrl) {
+  if (!ownedObjectUrls.delete(objectUrl)) return;
+  URL.revokeObjectURL(objectUrl);
 }
 
 function showError(message, { retry = false } = {}) {
@@ -63,22 +132,95 @@ function clearError() {
 function showUpload() {
   elements.dropZone.hidden = false;
   elements.resultPanel.hidden = true;
-  elements.viewResult.removeAttribute("href");
-  elements.viewResult.hidden = true;
+  elements.resultList.replaceChildren();
+  elements.resultList.hidden = true;
+  elements.uncertaintyMessage.hidden = true;
+  elements.uncertaintyMessage.textContent = "";
+  elements.resultHint.hidden = true;
+  elements.anotherImage.hidden = true;
 }
 
-function showResult(label, resultUrl) {
-  elements.resultLabel.textContent = label;
-  elements.viewResult.hidden = !resultUrl;
-
-  if (resultUrl) {
-    elements.viewResult.href = resultUrl;
-  } else {
-    elements.viewResult.removeAttribute("href");
-  }
-
+function showResults(predictions) {
+  const unidentified = isUnidentified(predictions);
+  elements.resultLabel.textContent = unidentified ? "Unidentified fingerprint" : "Top matches";
+  elements.chartTitle.textContent = `Top ${predictions.length} ${unidentified ? "tentative matches" : "predictions"}`;
+  elements.resultPanel.setAttribute("data-state", unidentified ? "unidentified" : "identified");
+  elements.uncertaintyMessage.hidden = !unidentified;
+  elements.uncertaintyMessage.textContent = unidentified
+    ? "The model could not identify a clear match. These are tentative matches. Try a clearer, closer crop, or explore the patterns to compare their features."
+    : "";
   elements.dropZone.hidden = true;
   elements.resultPanel.hidden = false;
+  elements.resultList.replaceChildren();
+  let hasNavigation = false;
+  for (const prediction of predictions) {
+    const item = document.createElement("li");
+    item.className = "prediction-row";
+    const info = document.createElement("div");
+    info.className = "prediction-info";
+    const heading = document.createElement("div");
+    heading.className = "prediction-heading";
+    const name = document.createElement("span");
+    name.className = "prediction-name";
+    name.textContent = prediction.className;
+    const probability = document.createElement("span");
+    probability.className = "prediction-probability";
+    probability.textContent = formatProbability(prediction.probability);
+    heading.append(name, probability);
+
+    const track = document.createElement("div");
+    track.className = "prediction-track";
+    track.setAttribute("role", "meter");
+    track.setAttribute("aria-label", `${prediction.className} model probability`);
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", "1");
+    track.setAttribute("aria-valuenow", String(prediction.probability));
+    track.setAttribute("aria-valuetext", formatProbability(prediction.probability));
+    const fill = document.createElement("span");
+    fill.className = "prediction-fill";
+    fill.style.width = `${prediction.probability * 100}%`;
+    track.append(fill);
+    info.append(heading, track);
+
+    const destination = getSafeCategoryUrl(prediction.slug);
+    const link = document.createElement(destination ? "a" : "span");
+    link.className = destination ? "prediction-link" : "prediction-link is-unavailable";
+    if (destination) {
+      hasNavigation = true;
+      link.href = destination;
+      link.target = previewScenario ? "_self" : "_top";
+      link.textContent = "→";
+      link.setAttribute("aria-label", previewScenario
+        ? `Sample destination: ${prediction.className}` : `Learn about ${prediction.className}`);
+    } else {
+      link.textContent = "—";
+      link.setAttribute("aria-hidden", "true");
+    }
+    item.append(info, link);
+    elements.resultList.append(item);
+  }
+  elements.resultList.hidden = false;
+  elements.resultHint.hidden = hasNavigation && !previewScenario;
+  elements.resultHint.textContent = previewScenario
+    ? "Sample destinations: each arrow opens a local preview of a fingerprint type page."
+    : "Type-page links appear when this widget is embedded on the configured Wix site.";
+  elements.anotherImage.hidden = false;
+}
+
+function resetClassification() {
+  if (previewScenario) {
+    const destination = new URL(window.location.href);
+    destination.searchParams.delete("preview");
+    destination.searchParams.set("model", activeModelAlias);
+    window.location.assign(destination.href);
+    return;
+  }
+  classificationRun += 1;
+  releaseSelectedImage();
+  clearError();
+  setBusy(false);
+  showUpload();
+  setUploadEnabled(Boolean(model));
 }
 
 function loadScript(src) {
@@ -217,12 +359,35 @@ async function initialize() {
   classificationRun += 1;
   model = null;
   wixSlugs = Object.create(null);
-  setBusy(false);
+  releaseSelectedImage();
   setUploadEnabled(false);
   showUpload();
   clearError();
+  previewScenario = getPreviewScenario();
+  elements.demoBanner.hidden = !previewScenario;
+
+  if (previewScenario) {
+    activeModelAlias = previewScenario === "two-class" ? "demo-a" : "demo-b";
+    const labels = previewScenario === "two-class"
+      ? ["Parallel Lines", "Concentric Circles"]
+      : ["Plain arch", "Ulnar loop", "Plain whorl", "Tented arch",
+        "Accidental whorl", "Central pocket loop", "Double loop", "Radial loop"];
+    wixSlugs = Object.fromEntries(labels.map((label) => [label,
+      label.toLowerCase().replaceAll(" ", "-")]));
+    elements.demoBanner.textContent = "Design preview · Sample image and illustrative scores. No model has analyzed this image.";
+    elements.previewImage.src = "./preview/fingerprint.svg";
+    elements.previewImage.alt = "Illustrative fingerprint used for this design preview";
+    setBusy(false);
+    showResults(getRankedPredictions(labels.map((className, index) => ({
+      className, probability: PREVIEW_SCENARIOS[previewScenario][index],
+    }))));
+    return;
+  }
+
+  setBusy(false);
 
   const alias = new URLSearchParams(window.location.search).get("model")?.trim();
+  activeModelAlias = alias || null;
   if (!alias) {
     showError("This widget needs a model link.");
     return;
@@ -233,8 +398,10 @@ async function initialize() {
     return;
   }
 
+  setBusy(true, "Loading the fingerprint classifier…");
   try {
     const catalog = await fetchCatalog();
+    if (thisRun !== initializationRun) return;
     const modelConfig = getSafeModelConfig(catalog, alias);
 
     if (!modelConfig) {
@@ -257,6 +424,8 @@ async function initialize() {
 
     console.error("Classifier setup failed", error);
     showError(describeLoadError(error), { retry: true });
+  } finally {
+    if (thisRun === initializationRun) setBusy(false);
   }
 }
 
@@ -269,6 +438,10 @@ function validateImage(file) {
     throw new Error("Choose a PNG, JPEG, WebP, GIF, or BMP image.");
   }
 
+  if (!Number.isFinite(file.size) || file.size <= 0) {
+    throw new Error("Choose an image that is not empty.");
+  }
+
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
     throw new Error("Choose an image smaller than 15 MB.");
   }
@@ -276,6 +449,8 @@ function validateImage(file) {
 
 function loadImage(file) {
   const objectUrl = URL.createObjectURL(file);
+  ownedObjectUrls.add(objectUrl);
+  selectedObjectUrl = objectUrl;
   const image = new Image();
 
   return new Promise((resolve, reject) => {
@@ -283,7 +458,8 @@ function loadImage(file) {
     image.addEventListener(
       "error",
       () => {
-        URL.revokeObjectURL(objectUrl);
+        revokeImageUrl(objectUrl);
+        if (selectedObjectUrl === objectUrl) selectedObjectUrl = null;
         reject(new Error("The selected image could not be decoded."));
       },
       { once: true },
@@ -314,19 +490,28 @@ function getWixSiteBaseUrl() {
   }
 }
 
-function getSafeResultUrl(label) {
-  const wixSiteBaseUrl = getWixSiteBaseUrl();
-  const slug = wixSlugs[label];
-  if (!wixSiteBaseUrl || !slug) {
+function getSafeCategoryUrl(slug) {
+  if (typeof slug !== "string" || slug.length > 64 || !ALIAS_PATTERN.test(slug) ||
+      !Object.values(wixSlugs).includes(slug)) {
     return null;
   }
-
+  if (previewScenario) {
+    const url = new URL("./preview/category.html", window.location.href);
+    url.searchParams.set("type", slug);
+    return url.href;
+  }
+  const wixSiteBaseUrl = getWixSiteBaseUrl();
+  if (!wixSiteBaseUrl) {
+    return null;
+  }
   return new URL(slug, wixSiteBaseUrl).href;
 }
 
 async function classify(file) {
+  if (previewScenario) return;
   const thisRun = ++classificationRun;
   let loadedImage;
+  releaseSelectedImage();
   clearError();
   setBusy(true);
   setUploadEnabled(false);
@@ -338,26 +523,25 @@ async function classify(file) {
       throw new Error("The classifier is still loading. Try again in a moment.");
     }
 
+    const predictionModel = model;
     loadedImage = await loadImage(file);
-    const predictions = await model.predict(loadedImage.image, false);
+    if (thisRun !== classificationRun) return;
+    const predictions = await predictionModel.predict(loadedImage.image, false);
 
     if (thisRun !== classificationRun) {
       return;
     }
 
-    if (!Array.isArray(predictions) || predictions.length === 0) {
-      throw new Error("The model returned no class predictions.");
+    const ranked = getRankedPredictions(predictions);
+    if (loadedImage.objectUrl) {
+      elements.previewImage.src = loadedImage.objectUrl;
+      elements.previewImage.alt = "Uploaded fingerprint being compared with the model predictions";
     }
-
-    const winner = [...predictions].sort((a, b) => b.probability - a.probability)[0];
-    if (!winner || typeof winner.className !== "string" || !winner.className.trim()) {
-      throw new Error("The model returned an invalid class prediction.");
-    }
-
-    showResult(winner.className, getSafeResultUrl(winner.className));
+    showResults(ranked);
   } catch (error) {
     if (thisRun === classificationRun) {
       console.error("Prediction failed", error);
+      releaseSelectedImage();
       showUpload();
       showError(
         error instanceof Error ? error.message : "Choose a different image and try again.",
@@ -365,8 +549,8 @@ async function classify(file) {
       setUploadEnabled(Boolean(model));
     }
   } finally {
-    if (loadedImage?.objectUrl) {
-      URL.revokeObjectURL(loadedImage.objectUrl);
+    if (loadedImage?.objectUrl && thisRun !== classificationRun) {
+      revokeImageUrl(loadedImage.objectUrl);
     }
     if (thisRun === classificationRun) {
       setBusy(false);
@@ -388,6 +572,7 @@ function hasFiles(event) {
 
 elements.imageInput.addEventListener("change", handleInputChange);
 elements.retryButton.addEventListener("click", initialize);
+elements.anotherImage.addEventListener("click", resetClassification);
 
 elements.dropZone.addEventListener("dragenter", (event) => {
   if (!hasFiles(event)) return;
@@ -420,7 +605,7 @@ elements.dropZone.addEventListener("drop", (event) => {
 });
 
 window.addEventListener("offline", () => {
-  if (!model) {
+  if (!model && !previewScenario) {
     showError("This browser is offline. Reconnect and retry.", { retry: true });
   }
 });

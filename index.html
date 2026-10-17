@@ -5,36 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="referrer" content="no-referrer">
-    <title>Image classifier</title>
+    <title>Fingerprint explorer</title>
     <link rel="stylesheet" href="./widget.css">
     <script src="./widget.js" defer></script>
   </head>
   <body>
     <main class="widget-shell">
-      <section class="widget-card" aria-label="Image classifier">
+      <section class="widget-card" aria-label="Fingerprint explorer">
+        <p id="demo-banner" class="demo-banner" hidden>Design preview · Sample predictions, not a model analysis</p>
+
         <label id="drop-zone" class="drop-zone" for="image-input">
-          <svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true">
-            <rect x="7" y="8" width="34" height="32" rx="5"></rect>
-            <path d="m13 33 8-9 6 6 4-4 4 7"></path>
-            <circle cx="18" cy="17" r="3"></circle>
-          </svg>
-          <span class="sr-only">Choose or drop an image to classify</span>
+          <span class="upload-icon-wrap" aria-hidden="true">
+            <svg class="upload-icon" viewBox="0 0 48 48">
+              <rect x="7" y="8" width="34" height="32" rx="6"></rect>
+              <path d="m13 33 8-9 6 6 4-4 4 7"></path>
+              <circle cx="18" cy="17" r="3"></circle>
+              <path d="M35 5v10m-5-5h10"></path>
+            </svg>
+          </span>
+          <span class="eyebrow">Fingerprint explorer</span>
+          <span class="upload-title">What pattern do you see?</span>
+          <span class="upload-description">Upload a fingerprint to explore its three closest matches.</span>
+          <span class="upload-button">Choose an image <span aria-hidden="true">↑</span></span>
+          <span class="upload-formats">or drag and drop · JPG, PNG, WebP, GIF or BMP · up to 15 MB</span>
+          <span class="upload-privacy">Your image is processed in your browser.</span>
         </label>
         <input
           id="image-input"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+          aria-label="Choose a fingerprint image"
           disabled
         >
 
         <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
           <span class="spinner" aria-hidden="true"></span>
-          <span class="sr-only">Classifying image</span>
+          <span id="loading-message" class="loading-message">Preparing the fingerprint model…</span>
         </div>
 
-        <section id="result-panel" class="result-panel" aria-live="polite" hidden>
-          <p id="result-label" class="result-label"></p>
-          <a id="view-result" class="result-link" target="_blank" rel="noopener" hidden>View your result</a>
+        <section id="result-panel" class="result-panel" aria-labelledby="result-label" aria-live="polite" hidden>
+          <header class="result-header">
+            <p class="eyebrow">Fingerprint explorer</p>
+            <h1 id="result-label" class="result-label">Your closest matches</h1>
+            <p class="result-description">Compare the patterns, then explore each type.</p>
+          </header>
+          <div class="result-body">
+            <figure class="fingerprint-figure">
+              <div class="fingerprint-frame">
+                <img id="preview-image" class="preview-image" alt="Your uploaded fingerprint">
+              </div>
+              <figcaption>Your fingerprint</figcaption>
+            </figure>
+            <div class="prediction-chart">
+              <div class="chart-heading">
+                <h2 id="chart-title">Top 3 predictions</h2>
+                <span class="chart-unit">Model probability</span>
+              </div>
+              <div class="chart-scale" aria-hidden="true"><span>0%</span><span>100%</span></div>
+              <ol id="result-list" class="result-list" aria-label="Top fingerprint predictions" hidden></ol>
+              <p id="uncertainty-message" class="uncertainty-message" hidden></p>
+              <p id="result-hint" class="result-hint" hidden>Open this classifier from your published Wix site to explore the fingerprint types.</p>
+              <p class="score-note">These scores show the model’s predictions. Use the pattern descriptions to compare what you see.</p>
+            </div>
+          </div>
+          <footer class="result-footer">
+            <span class="privacy-note"><span class="privacy-dot" aria-hidden="true"></span> Image processed in your browser</span>
+            <button id="another-image" class="result-link" type="button" hidden>Try another image <span aria-hidden="true">↻</span></button>
+          </footer>
         </section>
 
         <div id="error-panel" class="error-panel" role="alert" hidden>
@@ -44,6 +81,6 @@
       </section>
     </main>
 
-    <noscript>This image classifier needs JavaScript to run.</noscript>
+    <noscript>This fingerprint explorer needs JavaScript to run.</noscript>
   </body>
 </html>
