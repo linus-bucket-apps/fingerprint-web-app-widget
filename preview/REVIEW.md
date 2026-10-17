@@ -65,3 +65,11 @@ Mobile unidentified sample:
 Real localhost inference with working sample arrows (generated test image):
 
 ![Local inference](screenshots/local-inference.jpg)
+
+The client export is available as `?model=demo-c`, with `type-1` through `type-8`
+mapped directly to matching Wix slugs. Browser loading, inference and the Type 1
+sample destination were checked. The image below is an abstract generated smoke
+fixture used to verify plumbing; it does not establish any correspondence between
+numbered types and named fingerprint categories or validate model accuracy.
+
+![Client model plumbing check](screenshots/demo-c-inference.jpg)
