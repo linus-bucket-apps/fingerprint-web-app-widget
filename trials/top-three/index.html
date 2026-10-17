@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="referrer" content="no-referrer">
+    <title>Fingerprint explorer</title>
+    <link rel="stylesheet" href="./widget.css">
+    <script src="./widget.js" defer></script>
+  </head>
+  <body>
+    <main class="widget-shell">
+      <section class="widget-card" aria-label="Fingerprint explorer">
+        <p id="demo-banner" class="demo-banner" hidden>Sample preview</p>
+
+        <label id="drop-zone" class="drop-zone" for="image-input">
+          <span class="upload-button">Choose an image</span>
+          <span class="upload-formats">JPG, PNG, WebP, GIF or BMP · up to 15 MB</span>
+        </label>
+        <input
+          id="image-input"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+          aria-label="Choose a fingerprint image"
+          disabled
+        >
+
+        <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="loading-message" class="sr-only">Preparing the fingerprint model…</span>
+        </div>
+
+        <section id="result-panel" class="result-panel" aria-labelledby="result-label" aria-live="polite" hidden>
+          <h1 id="result-label" class="sr-only">Your closest matches</h1>
+          <div class="result-body">
+            <figure class="fingerprint-figure">
+              <div class="fingerprint-frame">
+                <img id="preview-image" class="preview-image" alt="Your uploaded fingerprint">
+              </div>
+              <button id="another-image" class="reset-button" type="button" aria-label="Try another image" title="Try another image" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"></path></svg>
+              </button>
+            </figure>
+            <div class="prediction-chart">
+              <h2 id="chart-title" class="sr-only">Top 3 predictions</h2>
+              <p id="uncertainty-message" class="uncertainty-message" role="status" hidden></p>
+              <ol id="result-list" class="result-list" aria-label="Top fingerprint predictions" hidden></ol>
+              <p id="result-hint" class="sr-only" hidden>Open this classifier from your published Wix site to explore the fingerprint types.</p>
+            </div>
+          </div>
+        </section>
+
+        <div id="error-panel" class="error-panel" role="alert" hidden>
+          <p id="error-message"></p>
+          <button id="retry-button" type="button" hidden>Retry</button>
+        </div>
+      </section>
+    </main>
+
+    <noscript>This fingerprint explorer needs JavaScript to run.</noscript>
+  </body>
+</html>
