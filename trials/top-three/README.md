@@ -53,8 +53,10 @@ directory remains in the published tree.
    remove that integration from the test page; keep unrelated page logic.
 7. Publish the Wix test page and test a clear result, an unidentified result,
    restart, and each category arrow. Test on the published page rather than only
-   Wix Preview. Links use visitor-clicked `target="_top"`; actual embed permissions
-   and referrer behavior must be verified there.
+   Wix Preview. Category arrows open a new tab using `target="_blank"` and
+   `rel="noopener"`, matching the original widget. Wix's embed allows popups but
+   blocks top-level (`_top`) navigation. Tooltips and accessible names indicate
+   that a category opens in a new tab. Sample/local destinations use `_self`.
 
 On localhost, real classification arrows open sample category placeholders for
 review. On GitHub Pages opened directly, there is no trusted Wix referrer, so the
