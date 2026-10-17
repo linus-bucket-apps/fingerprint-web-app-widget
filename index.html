@@ -33,17 +33,15 @@
 
         <section id="result-panel" class="result-panel" aria-labelledby="result-label" aria-live="polite" hidden>
           <h1 id="result-label" class="sr-only">Your closest matches</h1>
-          <div class="result-actions">
-            <p id="uncertainty-message" class="uncertainty-message" hidden></p>
-            <button id="another-image" class="reset-button" type="button" aria-label="Try another image" title="Try another image" hidden>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"></path></svg>
-            </button>
-          </div>
+          <p id="uncertainty-message" class="uncertainty-message" hidden></p>
           <div class="result-body">
             <figure class="fingerprint-figure">
               <div class="fingerprint-frame">
                 <img id="preview-image" class="preview-image" alt="Your uploaded fingerprint">
               </div>
+              <button id="another-image" class="reset-button" type="button" aria-label="Try another image" title="Try another image" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"></path></svg>
+              </button>
             </figure>
             <div class="prediction-chart">
               <h2 id="chart-title" class="sr-only">Top 3 predictions</h2>

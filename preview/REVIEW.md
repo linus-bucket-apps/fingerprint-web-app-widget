@@ -38,7 +38,8 @@ was changed or published. Published Wix referrer/navigation and final iframe
 height still require verification in the intended site and browsers.
 
 The widget uses a minimal layout: upload button and formats, then the image,
-labelled probability bars, category arrows and an icon-only reset at the top right.
+labelled probability bars and category arrows. An icon-only reset spans the image's
+width beneath the shorter preview; the two columns align in height on desktop.
 Unidentified results show a compact status above the chart. Headings and navigation
 hints remain available to screen readers without adding visible copy.
 
