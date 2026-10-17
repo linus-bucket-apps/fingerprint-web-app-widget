@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fingerprint widget · Design preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 56px 24px; background: #f5f4ef; color: #253e35; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 760px; margin: auto; }
+    .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.15; letter-spacing: -.04em; margin: 14px 0 24px; }
+    p { max-width: 650px; }
+    nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 32px 0; }
+    a { color: #254e40; }
+    nav a { padding: 20px; border: 1px solid #ccd5cb; background: #fff; border-radius: 12px; text-decoration: none; }
+    nav a:hover { border-color: #254e40; background: #edf3eb; }
+    nav span { display: block; font-size: 14px; color: #5f6d64; margin-top: 6px; }
+    a:focus-visible { outline: 3px solid #457a64; outline-offset: 4px; }
+    aside { border-top: 1px solid #ccd5cb; padding-top: 20px; font-size: 14px; }
+    @media (max-width: 480px) { body { padding: 32px 18px; } nav { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Client review · Widget concept</p>
+    <h1>One upload.<br>Three possibilities.</h1>
+    <p>This concept keeps the image, model scores and category links together inside the widget. Open a sample below to explore the proposed result view.</p>
+    <nav aria-label="Sample result scenarios">
+      <a href="../?model=demo-b&amp;preview=clear"><strong>Clear leading match →</strong><span>76%, 14%, 6% · three horizontal bars</span></a>
+      <a href="../?model=demo-b&amp;preview=close"><strong>Close matches →</strong><span>Close scores · unidentified message, no matches shown</span></a>
+      <a href="../?model=demo-b&amp;preview=diffuse"><strong>No clear pattern →</strong><span>Diffuse scores · unidentified message, no matches shown</span></a>
+      <a href="../?model=demo-a&amp;preview=two-class"><strong>Two-class model →</strong><span>68%, 32% · only two bars</span></a>
+    </nav>
+    <p><a href="../?model=demo-c">Try the actual image classifier →</a></p>
+    <aside>
+      <p>All four samples use an illustrative fingerprint and invented scores. They demonstrate the interface, not model accuracy. Sample arrows open a placeholder category page.</p>
+      <p><strong>Design decision:</strong> the teacher controls this widget’s result layout and uncertainty messages. Students can still write and style their individual category pages in Wix. Giving students direct visual control over the probability chart would need a different approach.</p>
+    </aside>
+  </main>
+</body>
+</html>
