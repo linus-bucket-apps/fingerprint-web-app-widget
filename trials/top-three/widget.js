@@ -196,10 +196,11 @@ function showResults(predictions) {
     if (destination) {
       hasNavigation = true;
       link.href = destination;
-      link.target = sampleDestinations ? "_self" : "_top";
+      link.target = sampleDestinations ? "_self" : "_blank";
+      if (!sampleDestinations) link.rel = "noopener";
       link.setAttribute("aria-label", sampleDestinations
-        ? `Sample destination: ${prediction.className}` : `Learn about ${prediction.className}`);
-      link.title = sampleDestinations ? `Preview the ${prediction.className} sample page` : `Learn about ${prediction.className}`;
+        ? `Sample destination: ${prediction.className}` : `Learn about ${prediction.className} (opens in a new tab)`);
+      link.title = sampleDestinations ? `Preview the ${prediction.className} sample page` : `Learn about ${prediction.className} (opens in a new tab)`;
     } else {
       link.setAttribute("role", "link");
       link.setAttribute("aria-disabled", "true");

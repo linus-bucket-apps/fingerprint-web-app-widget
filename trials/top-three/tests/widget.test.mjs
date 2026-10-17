@@ -315,8 +315,10 @@ test("bars use original probabilities, readable labels, and direct Wix category 
     assert.equal(Number(meter.getAttribute("aria-valuenow")), prediction.probability);
     assert.equal(fill.style.width, `${prediction.probability * 100}%`);
     assert.equal(link.href, `https://student.wixsite.com/fingerprint/${prediction.slug}`);
-    assert.equal(link.target, "_top");
+    assert.equal(link.target, "_blank");
+    assert.equal(link.rel, "noopener");
     assert.match(link.getAttribute("aria-label"), new RegExp(prediction.className));
+    assert.match(link.getAttribute("aria-label"), /opens in a new tab/);
   }
   assert.equal(w.get("result-panel").hidden, false);
   assert.equal(w.get("drop-zone").hidden, true);
@@ -348,6 +350,7 @@ test("real classifications on loopback hosts have working sample arrows without 
       assert.equal(new URL(link.href).pathname, "/course/preview/category.html");
       assert.equal(new URL(link.href).hostname, host);
       assert.equal(link.target, "_self");
+      assert.equal(link.rel, undefined);
       assert.match(link.getAttribute("aria-label"), /Sample destination/);
     }
   }
