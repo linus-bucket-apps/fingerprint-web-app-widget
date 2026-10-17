@@ -18,5 +18,18 @@
       "Tented arch": "tented-arch",
       "Ulnar loop": "ulnar-loop"
     }
+  },
+  "demo-c": {
+    "path": "./models/demo-c/v1/",
+    "wixSlugs": {
+      "type-1": "type-1",
+      "type-2": "type-2",
+      "type-3": "type-3",
+      "type-4": "type-4",
+      "type-5": "type-5",
+      "type-6": "type-6",
+      "type-7": "type-7",
+      "type-8": "type-8"
+    }
   }
 }
