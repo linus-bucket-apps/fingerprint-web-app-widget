@@ -143,16 +143,21 @@ function showUpload() {
 function showResults(predictions) {
   const unidentified = isUnidentified(predictions);
   const sampleDestinations = usesSampleDestinations();
-  elements.resultLabel.textContent = unidentified ? "Unidentified fingerprint" : "Top matches";
-  elements.chartTitle.textContent = `Top ${predictions.length} ${unidentified ? "tentative matches" : "predictions"}`;
+  elements.resultLabel.textContent = unidentified ? "Unidentified image" : "Top matches";
+  elements.chartTitle.textContent = unidentified ? "No confident match" : `Top ${predictions.length} predictions`;
   elements.resultPanel.setAttribute("data-state", unidentified ? "unidentified" : "identified");
   elements.uncertaintyMessage.hidden = !unidentified;
   elements.uncertaintyMessage.textContent = unidentified
-    ? "Unidentified · tentative matches"
+    ? "Unidentified image. Try a clearer fingerprint image."
     : "";
   elements.dropZone.hidden = true;
   elements.resultPanel.hidden = false;
   elements.resultList.replaceChildren();
+  elements.resultList.hidden = unidentified;
+  elements.resultHint.hidden = true;
+  elements.resultHint.textContent = "";
+  elements.anotherImage.hidden = false;
+  if (unidentified) return;
   let hasNavigation = false;
   for (const prediction of predictions) {
     const item = document.createElement("li");
@@ -208,7 +213,6 @@ function showResults(predictions) {
   elements.resultHint.textContent = sampleDestinations
     ? "Sample destinations: each arrow opens a local preview of a fingerprint type page."
     : "Type-page links appear when this widget is embedded on the configured Wix site.";
-  elements.anotherImage.hidden = false;
 }
 
 function resetClassification() {

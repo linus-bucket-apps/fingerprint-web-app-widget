@@ -86,10 +86,10 @@ positive scores below 0.1% displayed as `<0.1%`.
 
 The initial experimental confidence rule marks the image **Unidentified** if the
 leading score is below **50%**, or the lead over second place is below **15
-percentage points**. Those constants are in `CONFIG` in `widget.js`. The image and
-top matches remain visible with a compact **Unidentified · tentative matches** status.
-Category arrows remain available for comparison. A low-scoring alternative does
-not make a clear 90% leader uncertain.
+percentage points**. Those constants are in `CONFIG` in `widget.js`. Unidentified
+results hide all prediction bars, scores and category arrows. The selected image
+and restart button remain visible beside a short retry message. A low-scoring
+alternative does not make a clear 90% leader uncertain.
 
 These thresholds need validation for the trained model. A high score cannot prove
 that an arbitrary image is a valid fingerprint; this rule handles uncertain scores

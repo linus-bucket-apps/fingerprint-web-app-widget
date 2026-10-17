@@ -14,7 +14,7 @@ On a published Wix embed, arrows link to the student's category pages instead.
 
 - Does the image-left, probabilities-right layout communicate the result clearly?
 - Are three choices, with an arrow beside each, useful for students?
-- Is the unidentified message clear while still allowing exploration?
+- Is the unidentified retry message clear when matches and category links are hidden?
 - Is a teacher-managed result layout acceptable, with students designing their
   individual Wix category pages? Or should students design the result chart too?
 
@@ -40,7 +40,8 @@ height still require verification in the intended site and browsers.
 The widget uses a minimal layout: upload button and formats, then the image,
 labelled probability bars and category arrows. An icon-only reset spans the image's
 width beneath the shorter preview; the two columns align in height on desktop.
-Unidentified results show a compact status above the chart. Headings and navigation
+Unidentified results replace the chart and category links with a short retry message.
+The image and restart remain available. Headings and navigation
 hints remain available to screen readers without adding visible copy.
 
 ## Screenshots

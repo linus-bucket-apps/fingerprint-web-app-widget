@@ -354,8 +354,32 @@ test("unidentified threshold includes weak and close scores while respecting exa
     assert.equal(w.context.isUnidentified(ranked), expected, JSON.stringify(scores));
     w.context.showResults(ranked);
     assert.equal(w.get("uncertainty-message").hidden, !expected, JSON.stringify(scores));
-    assert.equal(w.get("result-list").children.length, 3);
+    assert.equal(w.get("result-list").hidden, expected);
+    assert.equal(w.get("result-list").children.length, expected ? 0 : 3);
+    if (expected) assert.equal(findTag(w.get("result-list"), "a").length, 0);
   }
+});
+
+test("an unidentified result clears earlier matches and links while retaining the image and restart", async () => {
+  const w = widget();
+  w.setModel();
+  await classifyDecoded(w);
+  assert.equal(findTag(w.get("result-list"), "a").length, 3);
+  w.setModel(async () => [
+    { className: "Double loop", probability: 0.43 },
+    { className: "Central pocket loop", probability: 0.38 },
+    { className: "Accidental whorl", probability: 0.15 },
+  ]);
+  await classifyDecoded(w);
+  assert.equal(w.get("preview-image").src, "blob:test-2");
+  assert.equal(w.get("result-list").children.length, 0);
+  assert.equal(w.get("result-list").hidden, true);
+  assert.equal(w.get("result-hint").hidden, true);
+  assert.equal(w.get("another-image").hidden, false);
+  assert.match(w.get("uncertainty-message").textContent, /Unidentified image/);
+  w.context.resetClassification();
+  assert.equal(w.get("uncertainty-message").hidden, true);
+  assert.equal(w.get("image-input").disabled, false);
 });
 
 test("successful classification retains the fingerprint URL until reset", async () => {
@@ -393,7 +417,7 @@ test("strict preview scenarios use synthetic data without requesting a model", a
     assert.equal(w.get("demo-banner").hidden, false, scenario);
     assert.match(w.get("demo-banner").textContent, /synthetic|sample|demo/i);
     assert.match(w.get("preview-image").src, /preview\/fingerprint\.svg$/);
-    assert.equal(w.get("result-list").children.length, scenario === "two-class" ? 2 : 3);
+    assert.equal(w.get("result-list").children.length, scenario === "two-class" ? 2 : scenario === "clear" ? 3 : 0);
     assert.equal(w.get("uncertainty-message").hidden, scenario === "clear" || scenario === "two-class");
   }
   const invalid = widget({ query: "?preview=unknown" });
