@@ -5,50 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="referrer" content="no-referrer">
-    <title>Fingerprint explorer</title>
+    <title>Image classifier</title>
     <link rel="stylesheet" href="./widget.css">
     <script src="./widget.js" defer></script>
   </head>
   <body>
     <main class="widget-shell">
-      <section class="widget-card" aria-label="Fingerprint explorer">
-        <p id="demo-banner" class="demo-banner" hidden>Sample preview</p>
-
+      <section class="widget-card" aria-label="Image classifier">
         <label id="drop-zone" class="drop-zone" for="image-input">
-          <span class="upload-button">Choose an image</span>
-          <span class="upload-formats">JPG, PNG, WebP, GIF or BMP · up to 15 MB</span>
+          <svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="7" y="8" width="34" height="32" rx="5"></rect>
+            <path d="m13 33 8-9 6 6 4-4 4 7"></path>
+            <circle cx="18" cy="17" r="3"></circle>
+          </svg>
+          <span class="sr-only">Choose or drop an image to classify</span>
         </label>
         <input
           id="image-input"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
-          aria-label="Choose a fingerprint image"
           disabled
         >
 
         <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
           <span class="spinner" aria-hidden="true"></span>
-          <span id="loading-message" class="sr-only">Preparing the fingerprint model…</span>
+          <span class="sr-only">Classifying image</span>
         </div>
 
-        <section id="result-panel" class="result-panel" aria-labelledby="result-label" aria-live="polite" hidden>
-          <h1 id="result-label" class="sr-only">Your closest matches</h1>
-          <div class="result-body">
-            <figure class="fingerprint-figure">
-              <div class="fingerprint-frame">
-                <img id="preview-image" class="preview-image" alt="Your uploaded fingerprint">
-              </div>
-              <button id="another-image" class="reset-button" type="button" aria-label="Try another image" title="Try another image" hidden>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"></path></svg>
-              </button>
-            </figure>
-            <div class="prediction-chart">
-              <h2 id="chart-title" class="sr-only">Top 3 predictions</h2>
-              <p id="uncertainty-message" class="uncertainty-message" role="status" hidden></p>
-              <ol id="result-list" class="result-list" aria-label="Top fingerprint predictions" hidden></ol>
-              <p id="result-hint" class="sr-only" hidden>Open this classifier from your published Wix site to explore the fingerprint types.</p>
-            </div>
-          </div>
+        <section id="result-panel" class="result-panel" aria-live="polite" hidden>
+          <p id="result-label" class="result-label"></p>
+          <a id="view-result" class="result-link" target="_blank" rel="noopener" hidden>View your result</a>
         </section>
 
         <div id="error-panel" class="error-panel" role="alert" hidden>
@@ -58,6 +44,6 @@
       </section>
     </main>
 
-    <noscript>This fingerprint explorer needs JavaScript to run.</noscript>
+    <noscript>This image classifier needs JavaScript to run.</noscript>
   </body>
 </html>
